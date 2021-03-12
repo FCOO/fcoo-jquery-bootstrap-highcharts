@@ -1,0 +1,278 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html lang="da" style="font-size: 100%">
+<head>
+	<title>fcoo.dk - fcoo-jquery-bootstrap-highcharts - Demo</title>
+	<meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta http-equiv='x-dns-prefetch-control' content='on'>
+
+	<meta name='copyright' content='FCOO'>
+	<meta name='owner' content='FCOO'>
+
+  <link  href="bower_components.css" rel="stylesheet">	
+  <link  href="../src/fcoo-jquery-bootstrap-highcharts.css" rel="stylesheet">	
+</head>
+
+<body>
+
+	<script src="bower_components.js"></script>
+	<script src="../src/fcoo-parameter-unit-extend.js"></script>
+	<script src="../src/fcoo-jquery-bootstrap-highcharts.js"></script>
+	<script src="../src/time-series.js"></script>
+	<script>
+
+        window.bsIsTouch = false;
+        window.bsIsTouch = (window.location.search =='?touch');
+
+        var main = window.fcoo.createMain({
+                topMenu: {search: false},
+                leftMenu: {width: 321},
+//HER                onResizeEnd: function(){ console.log('END'); }
+            }),
+            $mainContainer = main.$mainContainer;
+
+        function addButton(pId){
+            $('<button style="width:100%" onClick="replaceChart(\''+pId+'\')">Replace with:<br>'+ pId + '</button>').appendTo(main.leftMenu.$menu);
+        }
+        var mainContainer = $mainContainer.get(0),
+            mainChart;
+
+        function replaceChart(paramId){ 
+            if (mainChart) mainChart.destroy(); 
+            createChart(paramId);
+        };
+
+//HER        addButton('sea_water_velocity');
+//HER        addButton('sea_water_salinity');
+//HER        addButton('speed_of_sound_in_sea_water');
+
+        //*************************************************************
+        function createChart(paramId){        
+            $.getJSON('data/large-dataset.json', function (data) {
+                // Create a timer
+                var start = +new Date();
+
+                $.each(data.data, function(index, value){ data.data[index] = value/10; }); 
+
+                // Create the chart
+                var p = window.fcoo.parameter[paramId]; 
+                mainChart = window.fcoo.highcharts.stockChart($mainContainer, {
+                    container: {
+                        css: {
+                            height:'50%'
+                        }
+                    },
+                    chart: {
+                        events: {
+                            load: function () { 
+                                if (!window.TestController) {
+                                    this.setTitle(null, {
+                                        text: {da: 'Bygget graf på ' + (new Date() - start) + 'ms', en:'Built chart in ' + (new Date() - start) + 'ms'}
+                                    });
+                                }
+                            }
+                        },
+                        zoomType: 'x',
+                        alignTicks: false
+                    },
+
+                    yAxis: {
+//HER                        min: -2.0, max: 3.0,
+                        title: p.hcOptions_axis_title(),
+                        labels: p.hcOptions_axis_labels()
+                    },
+
+                    title: {
+                        text: {da:'Timeværdier af temperatur i Vik i Sogn, Norge, 2009-2017', en:'Hourly temperatures in Vik i Sogn, Norway, 2009-2017'}
+                    },
+                    subtitle: {
+                        text: 'Built chart in ...' // dummy text to reserve space for dynamic subtitle
+                    },
+                    series: [/*{
+                        //type: 'column',
+                        name: {da:'Temperatur', en:'Temperature'},
+                        data: data.data,
+                        pointStart: data.pointStart,
+                        pointInterval: data.pointInterval,
+            
+                        dataGrouping: {
+                            approximation  : "low",
+                            groupPixelWidth: 10,
+                        },
+                        tooltip: {
+                            valueDecimals: 1,
+                            valuePrefix: '(min)',
+                            valueSuffix: '°C'
+                        }
+                    },*/{
+                        type: 'spline',
+                        name: p.decodeGetName(false),
+                        data: data.data,
+                        pointStart: data.pointStart,
+                        pointInterval: data.pointInterval,
+                        tooltip: p.hcOptions_series_tooltip()
+                    }]
+                });
+            });
+            }
+            //*************************************************************
+
+            var startM = moment().year(1999),
+                startDate = startM.toDate(),
+                interval = 12 * 60 * 60 * 1000, //12 hour
+                dataList = [
+                {
+                    start   : startDate, 
+                    interval: interval,
+                    data    : [.43934, .52503, .57177, .69658, .97031, 1.19931, 1.37133, 1.54175]
+                },{
+                    start   : startDate, 
+                    interval: interval,
+                    data    : [249.16, 240.64, 297.42, 298.51, 324.90, 302.82, 381.21, 404.34]
+                }, {
+                    start   : startDate, 
+                    interval: interval,
+                    data    : [1174.4, 1772.2, 1600.5, 1977.1, 2018.5, 2437.7, 3214.7, 3938.7]
+                }, {
+                    start   : startDate, 
+                    interval: interval,
+                    data    : [2.1744, 2.7722, 2.6005, 2.9771, 1.0185, 1.4377, 2.2147, 4.9387]
+                }, {
+                    start   : startDate, 
+                    interval: interval,
+                    data    : [249, 264, 272, 295, 490, 282, 121, 434]
+                }, {
+                    start   : startDate, 
+                    interval: interval,
+                    data    : [249.16, 240.64, 297.42, 298.51, 324.90, 302.82, 381.21, 404.34]
+                }, {
+                    start   : startDate, 
+                    interval: interval,
+                    data    : [1174.4, 1772.2, 1600.5, 1977.1, 2018.5, 2437.7, 3214.7, 3938.7]
+                }, {
+                    start   : startDate, 
+                    interval: interval,
+                    data    : [2.1744, 2.7722, 2.6005, 2.9771, 1.0185, 1.4377, 2.2147, 4.9387]
+                }, {
+                    start   : startDate, 
+                    interval: interval,
+                    data    : [249, 264, 272, 295, 490, 282, 121, 434]
+                }];
+
+
+            //*************************************************************
+            function createTimeSerieChart(parameter, location){
+                if (mainChart) mainChart.destroy(); 
+
+                var data = [];
+                for (var i=0; i<Math.max(parameter.length || 1, location.length || 1); i++)
+                    data.push( $.extend(true, {}, dataList[i]) );
+
+                mainChart = fcoo.hc.timeSeries({
+                    container: $mainContainer,
+                    parameter: parameter,
+                    location: location,
+                    data    : data,
+        
+                    chartOptions: { container: { css: {height:'50%'} } }
+                });
+            }
+            
+            function addButton2(text, parameter, location){
+                $('<button style="width:100%">'+text+'</button>')
+                    .on('click', function(){
+                        createTimeSerieChart(parameter, location);
+                    })
+                    .appendTo(main.leftMenu.$menu);
+            }
+            
+            addButton2('1xP  + 1xL', ['sea_water_velocity'], {da: 'Lokationen', en:'The Location'} );                        
+            addButton2('1xP  + 3xL', ['sea_water_salinity'], [{da: 'Lokationen', en:'The Location'}, {da: 'Lokation 2', en:'Location 2'}, {da: 'Lokation 3 med et langt navn', en:'Location 3 with a long name'}] );
+            addButton2('3xP  + 1xL', ['sea_water_velocity', 'sea_water_salinity', 'speed_of_sound_in_sea_water'], {da: 'Lokationen', en:'The Location'});                        
+            addButton2('9xP  + 1xL', ['sea_water_velocity', 'sea_water_salinity', 'speed_of_sound_in_sea_water', 'air_temperature', 'air_pressure_at_mean_sea_level', 'sea_water_velocity', 'sea_water_salinity', 'speed_of_sound_in_sea_water', 'air_temperature'], {da: 'Lokationen', en:'The Location'});
+            
+
+            //*************************************************************
+            //historical time-series
+            function testConvert(data, timeSeriesData){
+                for (var i=0; i<data.dataLength; i++)
+                    data.data[i] = (Math.random() + 1)*data.data[i];
+                return data;
+            }
+            function testConvert2(data, timeSeriesData){
+                for (var i=0; i<data.dataLength; i++)
+                    data.data[i] = (2*Math.random() + 1)*data.data[i];
+                return data;
+            }
+            function testConvert3(data, timeSeriesData){
+                for (var i=0; i<data.dataLength; i++)
+                    data.data[i] = Math.random()*1000/*(2*Math.random() + 1)*/*data.data[i];
+                return data;
+            }
+
+
+            $('<button style="width:100%">Long 1xP + 1xL</button>').on('click', function(){
+                if (mainChart) mainChart.destroy(); 
+                mainChart = fcoo.hc.historicalTimeSeries({
+                    container: $mainContainer,
+                    parameter: "air_temperature",
+                    location: "Vik i Sogn, Norge",
+                    data    : {fileName: 'data/large-dataset.json'},
+        
+                    chartOptions: { container: { css: {height:'50%'} } }
+                });
+            }).appendTo(main.leftMenu.$menu);
+
+            $('<button style="width:100%">Long 1xP + 3xL</button>').on('click', function(){
+                if (mainChart) mainChart.destroy(); 
+                mainChart = fcoo.hc.historicalTimeSeries({
+                    container: $mainContainer,
+                    parameter: "air_temperature",
+                    location: ["Vik i Sogn, Norge", "Et andet sted", "Et 3. sted"],
+                    data    : [{fileName: 'data/large-dataset.json'}, {fileName: 'data/large-dataset.json', convert:testConvert2}, {fileName: 'data/large-dataset.json', convert:testConvert2}],
+        
+                    chartOptions: { container: { css: {height:'50%'} } }
+                });
+            }).appendTo(main.leftMenu.$menu);
+
+            $('<button style="width:100%">Long 3xP + 1xL</button>').on('click', function(){
+                if (mainChart) mainChart.destroy(); 
+                mainChart = fcoo.hc.historicalTimeSeries({
+                    container: $mainContainer,
+                    parameter: ["air_temperature", "air_pressure_at_mean_sea_level", "visibility_in_air"],
+                    location: "Vik i Sogn, Norge",
+                    data    : [{fileName: 'data/large-dataset.json'}, {fileName: 'data/large-dataset.json', convert:testConvert3}, {fileName: 'data/large-dataset.json', convert:testConvert3}],
+        
+                    chartOptions: { container: { css: {height:'50%'} } }
+                });
+            }).appendTo(main.leftMenu.$menu);
+            
+
+            //*************************************************************
+            $(function() {
+                fcoo.promiseList.options.finally = function(){
+                    fcoo.globalSetting.load( null, function(){ 
+                        /*
+                        createTimeSerieChart( 
+                            ['sea_water_velocity', 'sea_water_salinity', 'speed_of_sound_in_sea_water', 'air_temperature', 'air_pressure_at_mean_sea_level', 'sea_water_velocity', 'sea_water_salinity', 'speed_of_sound_in_sea_water', 'air_temperature'], 
+                            {da: 'Lokationen', en:'The Location'}
+                        );
+
+                        /*
+                        mainChart = fcoo.hc.historicalTimeSeries({
+                            container: $mainContainer,
+                            parameter: ["air_temperature", "air_pressure_at_mean_sea_level", "visibility_in_air"],
+                            location: "Vik i Sogn, Norge",
+                            data    : [{fileName: 'data/large-dataset.json'}, {fileName: 'data/large-dataset.json', convert:testConvert3}, {fileName: 'data/large-dataset.json', convert:testConvert3}],
+        
+                            chartOptions: { container: { css: {height:'50%'} } }
+                        });
+                        */
+                        
+                    });
+                };
+                fcoo.promiseList_getAll();
+            });
+	</script>
+</body>
+</html>
