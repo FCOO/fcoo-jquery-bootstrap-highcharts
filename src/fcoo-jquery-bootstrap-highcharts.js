@@ -6,6 +6,20 @@
 	https://github.com/FCOO/fcoo-jquery-bootstrap-highcharts
 	https://github.com/FCOO
 
+
+DEMO FOR INSPIRATIONS
+Wind distribution: https://www.highcharts.com/demo/polar-wind-rose
+
+Single parameter from one or more places with color-band (from the scale): https://www.highcharts.com/demo/spline-plot-bands
+
+Single parameter with range: https://www.highcharts.com/demo/arearange-line and https://www.highcharts.com/demo/stock/arearange
+
+Sync between multi charts: https://www.highcharts.com/demo/synchronized-charts
+
+Heat map / depth-time plot: https://www.highcharts.com/demo/heatmap-canvas
+
+Meteorogram: https://www.highcharts.com/demo/combo-meteogram#https://www.yr.no/place/United_Kingdom/England/London/forecast_hour_by_hour.xml
+
 ****************************************************************************/
 
 (function ($, Highcharts, i18next, moment, window/*, document, undefined*/) {

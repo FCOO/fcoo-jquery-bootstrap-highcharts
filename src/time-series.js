@@ -20,15 +20,6 @@ sub-title   : none
 legend      : horizontal below title
 axis        : Each parameter get own y-axis in own color
 
-
-Single parameter from one or more places with color-band (from the scale): https://www.highcharts.com/demo/spline-plot-bands
-
-Single parameter with range: https://www.highcharts.com/demo/arearange-line and https://www.highcharts.com/demo/stock/arearange
-
-Sync between multi charts: https://www.highcharts.com/blog/snippets/synchronisation-of-multiple-charts/
-
-
-
 ****************************************************************************/
 
 (function ($, Highcharts, i18next, moment, window/*, document, undefined*/) {
