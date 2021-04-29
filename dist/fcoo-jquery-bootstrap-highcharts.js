@@ -6,6 +6,20 @@
 	https://github.com/FCOO/fcoo-jquery-bootstrap-highcharts
 	https://github.com/FCOO
 
+
+DEMO FOR INSPIRATIONS
+Wind distribution: https://www.highcharts.com/demo/polar-wind-rose
+
+Single parameter from one or more places with color-band (from the scale): https://www.highcharts.com/demo/spline-plot-bands
+
+Single parameter with range: https://www.highcharts.com/demo/arearange-line and https://www.highcharts.com/demo/stock/arearange
+
+Sync between multi charts: https://www.highcharts.com/demo/synchronized-charts
+
+Heat map / depth-time plot: https://www.highcharts.com/demo/heatmap-canvas
+
+Meteorogram: https://www.highcharts.com/demo/combo-meteogram#https://www.yr.no/place/United_Kingdom/England/London/forecast_hour_by_hour.xml
+
 ****************************************************************************/
 
 (function ($, Highcharts, i18next, moment, window/*, document, undefined*/) {
@@ -131,7 +145,9 @@
 
             plotOptions: {
                 series: {
-                    //pointWidth: undefined,   //A pixel value specifying a fixed width for each column or bar point. When set to undefined, the width is calculated from the pointPadding and groupPadding. The width effects the dimension that is not based on the point value. For column series it is the hoizontal length and for bar series it is the vertical length.
+                    //pointWidth: undefined,    //A pixel value specifying a fixed width for each column or bar point.
+                                                //When set to undefined, the width is calculated from the pointPadding and groupPadding.
+                                                //The width effects the dimension that is not based on the point value. For column series it is the hoizontal length and for bar series it is the vertical length.
                 }
             },
 
@@ -177,8 +193,10 @@
             forced          : false,    //When data grouping is forced, it runs no matter how small the intervals are. This can be handy for example when the sum should be calculated for values appearing at random times within each hour.
             groupAll        : false,
             smoothed        : false,
-            approximation   : "average",//"average", //"average", "averages", "open", "high", "low", "close", "sum" or function([]NUMBER) return NUMBER
-            groupPixelWidth: 10, //The approximate pixel width of each group. If for example a series with 30 points is displayed over a 600 pixel wide plot area, no grouping is performed. If however the series contains so many points that the spacing is less than the groupPixelWidth, Highcharts will try to group it into appropriate groups so that each is more or less two pixels wide. Defaults to 10.
+            approximation   : "average",    //"average", //"average", "averages", "open", "high", "low", "close", "sum" or function([]NUMBER) return NUMBER
+            groupPixelWidth: 10,            //The approximate pixel width of each group. If for example a series with 30 points is displayed over a 600 pixel wide plot area, no grouping is performed.
+                                            //If however the series contains so many points that the spacing is less than the groupPixelWidth, Highcharts will try to group it into appropriate groups
+                                            //so that each is more or less two pixels wide. Defaults to 10.
 
             dateTimeLabelFormats: {
                 //millisecond : TODO. Using default now
@@ -390,33 +408,35 @@ Extend Parameter-object from fcoo-parameter-unit to interact with Highchart
     Extend Parameter with methods to get Highchart options
     ********************************************/
     $.extend(nsParameter.Parameter.prototype, {
-        decodeGetName: function(inclSpace, useSpeedParameter){
+        decodeGetName: function(inclUnit, useSpeedParameter, z){
             var param = this;
             if (useSpeedParameter && (this.speed_direction.length > 0))
                 param = this.speed_direction[0];
-            return decode( param.getName(inclSpace) );
+            return decode( param.getName(inclUnit, z) );
         },
 
         //hcOptions_XX: Return options for given part of options for charts
-        hcOptions_axis_title: function(){
+        hcOptions_axis_title: function(z){
             return {
-                text: this.decodeGetName(true)
+                text: this.decodeGetName(true, false, z) //decodeGetName(inclUnit, useSpeedParameter, z)
             };
         },
 
         //tooltip for single serie
-        hcOptions_series_tooltip: function(valuePrefix = ''){
+        hcOptions_series_tooltip: function(valuePrefix = '', z){
             return {
                 valueDecimals: this.decimals,
                 valuePrefix  : valuePrefix,
-                valueSuffix  : this.unit.decodeGetName(true)
+                valueSuffix  : this.unit.decodeGetName(true, z)
             };
         },
 
-        //Set deciamls on axis labels equal as parameter
+        //Set decimals on axis labels equal as parameter
         hcOptions_axis_labels_formatter: function(){
             var valueFormat = this.decimals ? '0,0.' + '0'.repeat(this.decimals) : '0,0';
-            return function(){ return window.numeral( this.value ).format( valueFormat ); };
+            return function(){
+                return window.numeral( this.value ).format( valueFormat );
+            };
         },
 
         hcOptions_axis_labels: function(){
@@ -452,15 +472,6 @@ sub-title   : none
 legend      : horizontal below title
 axis        : Each parameter get own y-axis in own color
 
-
-Single parameter from one or more places with color-band (from the scale): https://www.highcharts.com/demo/spline-plot-bands
-
-Single parameter with range: https://www.highcharts.com/demo/arearange-line and https://www.highcharts.com/demo/stock/arearange
-
-Sync between multi charts: https://www.highcharts.com/blog/snippets/synchronisation-of-multiple-charts/
-
-
-
 ****************************************************************************/
 
 (function ($, Highcharts, i18next, moment, window/*, document, undefined*/) {
@@ -468,6 +479,7 @@ Sync between multi charts: https://www.highcharts.com/blog/snippets/synchronisat
 
 	//Create fcoo-namespace
     var ns = window.fcoo = window.fcoo || {},
+        nsParameter = ns.parameter = ns.parameter || {},
         nsHC = ns.hc = ns.highcharts = ns.highcharts || {};
 
     //Linkedin Extended Palette for Screen
@@ -637,7 +649,7 @@ Sync between multi charts: https://www.highcharts.com/blog/snippets/synchronisat
         container
         parameter   : []Parameter or Parameter
         location    : []Location Or Location
-        data        : []TimeSeriesDataOptions or TimeSeriesDataOptions
+        data        : []TimeSeriesData or TimeSeriesData
         chartOptions: JSON
         finally     : function(timeSeries) (optional) Called when all data are loaded.
                         Used when eg. not all data-source need there own series but need to be combined
@@ -653,8 +665,24 @@ Sync between multi charts: https://www.highcharts.com/blog/snippets/synchronisat
         this.finally = options.finally || function(){};
 
         this.parameter = $.isArray(options.parameter) ? options.parameter : [options.parameter];
-        $.each(this.parameter, function(index, param){ _this.parameter[index] = ns.parameter.getParameter(param); });
+        $.each(this.parameter, function(index, param){
+            _this.parameter[index] = ns.parameter.getParameter(param);
+        });
         this.multiParameter = this.parameter.length > 1;
+
+        var unitList = options.unit ? ($.isArray(options.unit) ? options.unit : [options.unit]) : [];
+        $.each(this.parameter, function(index, param){
+            if (unitList.length > index){
+                //Clone the parameter and set it to use the new unit
+                var unit = nsParameter.getUnit(unitList[index]),
+                    decimals = Math.max(0, param.decimals + Math.round(Math.log10(unit.SI_factor/param.unit.SI_factor)));
+                _this.parameter[index] = $.extend(true, {}, param);
+                _this.parameter[index].decimals = decimals;
+                _this.parameter[index].unit = unit;
+            }
+        });
+
+        this.z = options.z || null;
 
         this.location  = $.isArray(options.location)  ? options.location  : [options.location];
         this.locationName = [];
@@ -730,11 +758,11 @@ Sync between multi charts: https://www.highcharts.com/blog/snippets/synchronisat
             if (this.multiParameter || this.singleSingle)
                 this.set('title.text', this.locationName[0]);
             else
-                this.set('title.text', this.parameter[0].decodeGetName(true));
+                this.set('title.text', this.parameter[0].decodeGetName(true, false, this.z));
 
             //Sub-title = paramter-name if only one location and one paramter
             if (this.singleSingle){
-                this.set('subtitle', this.parameter[0].hcOptions_axis_title());
+                this.set('subtitle', this.parameter[0].hcOptions_axis_title(this.z));
                 this.set('legend.enabled', false);
             }
             else
@@ -759,7 +787,7 @@ Sync between multi charts: https://www.highcharts.com/blog/snippets/synchronisat
 
             //Tooltips
             //Set common tooltip for single parameter-mode (in multi-parameter mode the tooltip is set pro series
-            chartOptions.tooltip = this.parameter[0].hcOptions_series_tooltip();
+            chartOptions.tooltip = this.parameter[0].hcOptions_series_tooltip('', this.z);
 
             this.set('tooltip.shared', true);
             this.set('tooltip.split', false);
@@ -770,14 +798,11 @@ Sync between multi charts: https://www.highcharts.com/blog/snippets/synchronisat
             this.set('tooltip.headerFormat', '<span class="chart-tooltip-time">{point.key}</span><table class="chart-tooltip-table">');
             if (this.singleSingle){
                 //Single location and paramater
-//HER                this.set('tooltip.headerFormat', '<span class="chart-tooltip-time">{point.key}</span><br/>');
                 this.set('tooltip.pointFormatter', function(){ return _this._tooltip_pointFormatter_single.call(this, _this); });
             }
             else {
                 //Display multi paramater or location in a table to have correct align
-//HER                this.set('tooltip.headerFormat', '<span class="chart-tooltip-time">{point.key}</span><table class="chart-tooltip-table">');
                 this.set('tooltip.pointFormatter', function(){ return _this._tooltip_pointFormatter_multi.call(this, _this); });
-//HER                this.set('tooltip.footerFormat', '</table>');
             }
             this.set('tooltip.footerFormat', '</table>');
 
@@ -816,7 +841,7 @@ Sync between multi charts: https://www.highcharts.com/blog/snippets/synchronisat
 
                             opposite: index > leftAxisIndex,
                             title: {
-                                text: parameter.decodeGetName(true, true),
+                                text: parameter.decodeGetName(true, true, _this.z),
                                 style: style
                             },
                             labels: {
@@ -835,11 +860,12 @@ Sync between multi charts: https://www.highcharts.com/blog/snippets/synchronisat
             if (this.multiParameter || this.singleSingle)
                 $.each(this.parameter, function(index, parameter){
                     chartOptions.series.push({
-                        name         : parameter.decodeGetName(true),
-                        nameInTooltip: parameter.decodeGetName(false, true) ,
+                        name         : parameter.decodeGetName(true, false, _this.z),
+                        nameInTooltip: parameter.decodeGetName(false, true, _this.z),
                         color        : Highcharts.getOptions().colors[index],
                         yAxis        : seriesAxisIndex[index],
-                        tooltip      : parameter.hcOptions_series_tooltip(), data: [1,2,3,4,5,6,7]
+                        tooltip      : parameter.hcOptions_series_tooltip('', _this.z),
+data: [1,2,3,4,5,6,7]
                     });
                 });
             else {
@@ -884,7 +910,7 @@ Sync between multi charts: https://www.highcharts.com/blog/snippets/synchronisat
         container
         parameter   : []Parameter or Parameter
         location    : []Location Or Location
-        data        : []TimeSeriesDataOptions or TimeSeriesDataOptions
+        data        : []TimeSeriesData or TimeSeriesData
         chartOptions: JSON
         finally     : function(timeSeries) (optional) Called when all data are loaded.
                         Used when eg. not all data-source need there own series but need to be combined
@@ -913,7 +939,7 @@ Sync between multi charts: https://www.highcharts.com/blog/snippets/synchronisat
         container
         parameter   : Parameter
         location    : Location
-        data        : TimeSeriesDataOptions
+        data        : TimeSeriesData
         chartOptions: JSON
         finally     : function(timeSeries) (optional) Called when all data are loaded.
                         Used when eg. not all data-source need there own series but need to be combined

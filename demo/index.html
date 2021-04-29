@@ -79,7 +79,7 @@
 
                     yAxis: {
 //HER                        min: -2.0, max: 3.0,
-                        title: p.hcOptions_axis_title(),
+                        title : p.hcOptions_axis_title(),
                         labels: p.hcOptions_axis_labels()
                     },
 
@@ -162,32 +162,37 @@
 
 
             //*************************************************************
-            function createTimeSerieChart(parameter, location){
+            function createTimeSerieChart(parameter, location, unit, factor){
                 if (mainChart) mainChart.destroy(); 
 
                 var data = [];
-                for (var i=0; i<Math.max(parameter.length || 1, location.length || 1); i++)
+                for (var i=0; i<Math.max(parameter.length || 1, location.length || 1); i++){
                     data.push( $.extend(true, {}, dataList[i]) );
+console.log(data);
+                }
 
                 mainChart = fcoo.hc.timeSeries({
                     container: $mainContainer,
                     parameter: parameter,
-                    location: location,
-                    data    : data,
+                    unit     : unit,
+                    location : location,
+                    data     : data,
         
                     chartOptions: { container: { css: {height:'50%'} } }
                 });
             }
             
-            function addButton2(text, parameter, location){
+            function addButton2(text, parameter, location, unit){
                 $('<button style="width:100%">'+text+'</button>')
                     .on('click', function(){
-                        createTimeSerieChart(parameter, location);
+                        createTimeSerieChart(parameter, location, unit);
                     })
                     .appendTo(main.leftMenu.$menu);
             }
             
-            addButton2('1xP  + 1xL', ['sea_water_velocity'], {da: 'Lokationen', en:'The Location'} );                        
+            addButton2('1xP (SeaLevel)  + 1xL', ['sea_surface_height_above_mean_sea_level'], {da: 'Lokationen', en:'The Location'});                        
+            addButton2('1xP (SeaLevel [cm])  + 1xL', ['sea_surface_height_above_mean_sea_level'], {da: 'Lokationen', en:'The Location'}, 'cm', 100 );                        
+            addButton2('1xP  + 1xL', ['sea_water_velocity'], {da: 'Lokationen', en:'The Location'}/*, 'km/t'*/ );                        
             addButton2('1xP  + 3xL', ['sea_water_salinity'], [{da: 'Lokationen', en:'The Location'}, {da: 'Lokation 2', en:'Location 2'}, {da: 'Lokation 3 med et langt navn', en:'Location 3 with a long name'}] );
             addButton2('3xP  + 1xL', ['sea_water_velocity', 'sea_water_salinity', 'speed_of_sound_in_sea_water'], {da: 'Lokationen', en:'The Location'});                        
             addButton2('9xP  + 1xL', ['sea_water_velocity', 'sea_water_salinity', 'speed_of_sound_in_sea_water', 'air_temperature', 'air_pressure_at_mean_sea_level', 'sea_water_velocity', 'sea_water_salinity', 'speed_of_sound_in_sea_water', 'air_temperature'], {da: 'Lokationen', en:'The Location'});

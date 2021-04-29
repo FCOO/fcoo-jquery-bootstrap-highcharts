@@ -44,33 +44,35 @@ Extend Parameter-object from fcoo-parameter-unit to interact with Highchart
     Extend Parameter with methods to get Highchart options
     ********************************************/
     $.extend(nsParameter.Parameter.prototype, {
-        decodeGetName: function(inclSpace, useSpeedParameter){
+        decodeGetName: function(inclUnit, useSpeedParameter, z){
             var param = this;
             if (useSpeedParameter && (this.speed_direction.length > 0))
                 param = this.speed_direction[0];
-            return decode( param.getName(inclSpace) );
+            return decode( param.getName(inclUnit, z) );
         },
 
         //hcOptions_XX: Return options for given part of options for charts
-        hcOptions_axis_title: function(){
+        hcOptions_axis_title: function(z){
             return {
-                text: this.decodeGetName(true)
+                text: this.decodeGetName(true, false, z) //decodeGetName(inclUnit, useSpeedParameter, z)
             };
         },
 
         //tooltip for single serie
-        hcOptions_series_tooltip: function(valuePrefix = ''){
+        hcOptions_series_tooltip: function(valuePrefix = '', z){
             return {
                 valueDecimals: this.decimals,
                 valuePrefix  : valuePrefix,
-                valueSuffix  : this.unit.decodeGetName(true)
+                valueSuffix  : this.unit.decodeGetName(true, z)
             };
         },
 
-        //Set deciamls on axis labels equal as parameter
+        //Set decimals on axis labels equal as parameter
         hcOptions_axis_labels_formatter: function(){
             var valueFormat = this.decimals ? '0,0.' + '0'.repeat(this.decimals) : '0,0';
-            return function(){ return window.numeral( this.value ).format( valueFormat ); };
+            return function(){
+                return window.numeral( this.value ).format( valueFormat );
+            };
         },
 
         hcOptions_axis_labels: function(){

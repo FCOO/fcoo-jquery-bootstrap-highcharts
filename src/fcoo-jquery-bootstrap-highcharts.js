@@ -145,7 +145,9 @@ Meteorogram: https://www.highcharts.com/demo/combo-meteogram#https://www.yr.no/p
 
             plotOptions: {
                 series: {
-                    //pointWidth: undefined,   //A pixel value specifying a fixed width for each column or bar point. When set to undefined, the width is calculated from the pointPadding and groupPadding. The width effects the dimension that is not based on the point value. For column series it is the hoizontal length and for bar series it is the vertical length.
+                    //pointWidth: undefined,    //A pixel value specifying a fixed width for each column or bar point.
+                                                //When set to undefined, the width is calculated from the pointPadding and groupPadding.
+                                                //The width effects the dimension that is not based on the point value. For column series it is the hoizontal length and for bar series it is the vertical length.
                 }
             },
 
@@ -191,8 +193,10 @@ Meteorogram: https://www.highcharts.com/demo/combo-meteogram#https://www.yr.no/p
             forced          : false,    //When data grouping is forced, it runs no matter how small the intervals are. This can be handy for example when the sum should be calculated for values appearing at random times within each hour.
             groupAll        : false,
             smoothed        : false,
-            approximation   : "average",//"average", //"average", "averages", "open", "high", "low", "close", "sum" or function([]NUMBER) return NUMBER
-            groupPixelWidth: 10, //The approximate pixel width of each group. If for example a series with 30 points is displayed over a 600 pixel wide plot area, no grouping is performed. If however the series contains so many points that the spacing is less than the groupPixelWidth, Highcharts will try to group it into appropriate groups so that each is more or less two pixels wide. Defaults to 10.
+            approximation   : "average",    //"average", //"average", "averages", "open", "high", "low", "close", "sum" or function([]NUMBER) return NUMBER
+            groupPixelWidth: 10,            //The approximate pixel width of each group. If for example a series with 30 points is displayed over a 600 pixel wide plot area, no grouping is performed.
+                                            //If however the series contains so many points that the spacing is less than the groupPixelWidth, Highcharts will try to group it into appropriate groups
+                                            //so that each is more or less two pixels wide. Defaults to 10.
 
             dateTimeLabelFormats: {
                 //millisecond : TODO. Using default now

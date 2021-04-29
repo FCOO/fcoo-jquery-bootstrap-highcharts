@@ -27,6 +27,7 @@ axis        : Each parameter get own y-axis in own color
 
 	//Create fcoo-namespace
     var ns = window.fcoo = window.fcoo || {},
+        nsParameter = ns.parameter = ns.parameter || {},
         nsHC = ns.hc = ns.highcharts = ns.highcharts || {};
 
     //Linkedin Extended Palette for Screen
@@ -196,7 +197,7 @@ axis        : Each parameter get own y-axis in own color
         container
         parameter   : []Parameter or Parameter
         location    : []Location Or Location
-        data        : []TimeSeriesDataOptions or TimeSeriesDataOptions
+        data        : []TimeSeriesData or TimeSeriesData
         chartOptions: JSON
         finally     : function(timeSeries) (optional) Called when all data are loaded.
                         Used when eg. not all data-source need there own series but need to be combined
@@ -212,8 +213,24 @@ axis        : Each parameter get own y-axis in own color
         this.finally = options.finally || function(){};
 
         this.parameter = $.isArray(options.parameter) ? options.parameter : [options.parameter];
-        $.each(this.parameter, function(index, param){ _this.parameter[index] = ns.parameter.getParameter(param); });
+        $.each(this.parameter, function(index, param){
+            _this.parameter[index] = ns.parameter.getParameter(param);
+        });
         this.multiParameter = this.parameter.length > 1;
+
+        var unitList = options.unit ? ($.isArray(options.unit) ? options.unit : [options.unit]) : [];
+        $.each(this.parameter, function(index, param){
+            if (unitList.length > index){
+                //Clone the parameter and set it to use the new unit
+                var unit = nsParameter.getUnit(unitList[index]),
+                    decimals = Math.max(0, param.decimals + Math.round(Math.log10(unit.SI_factor/param.unit.SI_factor)));
+                _this.parameter[index] = $.extend(true, {}, param);
+                _this.parameter[index].decimals = decimals;
+                _this.parameter[index].unit = unit;
+            }
+        });
+
+        this.z = options.z || null;
 
         this.location  = $.isArray(options.location)  ? options.location  : [options.location];
         this.locationName = [];
@@ -289,11 +306,11 @@ axis        : Each parameter get own y-axis in own color
             if (this.multiParameter || this.singleSingle)
                 this.set('title.text', this.locationName[0]);
             else
-                this.set('title.text', this.parameter[0].decodeGetName(true));
+                this.set('title.text', this.parameter[0].decodeGetName(true, false, this.z));
 
             //Sub-title = paramter-name if only one location and one paramter
             if (this.singleSingle){
-                this.set('subtitle', this.parameter[0].hcOptions_axis_title());
+                this.set('subtitle', this.parameter[0].hcOptions_axis_title(this.z));
                 this.set('legend.enabled', false);
             }
             else
@@ -318,7 +335,7 @@ axis        : Each parameter get own y-axis in own color
 
             //Tooltips
             //Set common tooltip for single parameter-mode (in multi-parameter mode the tooltip is set pro series
-            chartOptions.tooltip = this.parameter[0].hcOptions_series_tooltip();
+            chartOptions.tooltip = this.parameter[0].hcOptions_series_tooltip('', this.z);
 
             this.set('tooltip.shared', true);
             this.set('tooltip.split', false);
@@ -329,14 +346,11 @@ axis        : Each parameter get own y-axis in own color
             this.set('tooltip.headerFormat', '<span class="chart-tooltip-time">{point.key}</span><table class="chart-tooltip-table">');
             if (this.singleSingle){
                 //Single location and paramater
-//HER                this.set('tooltip.headerFormat', '<span class="chart-tooltip-time">{point.key}</span><br/>');
                 this.set('tooltip.pointFormatter', function(){ return _this._tooltip_pointFormatter_single.call(this, _this); });
             }
             else {
                 //Display multi paramater or location in a table to have correct align
-//HER                this.set('tooltip.headerFormat', '<span class="chart-tooltip-time">{point.key}</span><table class="chart-tooltip-table">');
                 this.set('tooltip.pointFormatter', function(){ return _this._tooltip_pointFormatter_multi.call(this, _this); });
-//HER                this.set('tooltip.footerFormat', '</table>');
             }
             this.set('tooltip.footerFormat', '</table>');
 
@@ -375,7 +389,7 @@ axis        : Each parameter get own y-axis in own color
 
                             opposite: index > leftAxisIndex,
                             title: {
-                                text: parameter.decodeGetName(true, true),
+                                text: parameter.decodeGetName(true, true, _this.z),
                                 style: style
                             },
                             labels: {
@@ -394,11 +408,12 @@ axis        : Each parameter get own y-axis in own color
             if (this.multiParameter || this.singleSingle)
                 $.each(this.parameter, function(index, parameter){
                     chartOptions.series.push({
-                        name         : parameter.decodeGetName(true),
-                        nameInTooltip: parameter.decodeGetName(false, true) ,
+                        name         : parameter.decodeGetName(true, false, _this.z),
+                        nameInTooltip: parameter.decodeGetName(false, true, _this.z),
                         color        : Highcharts.getOptions().colors[index],
                         yAxis        : seriesAxisIndex[index],
-                        tooltip      : parameter.hcOptions_series_tooltip(), data: [1,2,3,4,5,6,7]
+                        tooltip      : parameter.hcOptions_series_tooltip('', _this.z),
+data: [1,2,3,4,5,6,7]
                     });
                 });
             else {
@@ -443,7 +458,7 @@ axis        : Each parameter get own y-axis in own color
         container
         parameter   : []Parameter or Parameter
         location    : []Location Or Location
-        data        : []TimeSeriesDataOptions or TimeSeriesDataOptions
+        data        : []TimeSeriesData or TimeSeriesData
         chartOptions: JSON
         finally     : function(timeSeries) (optional) Called when all data are loaded.
                         Used when eg. not all data-source need there own series but need to be combined
@@ -472,7 +487,7 @@ axis        : Each parameter get own y-axis in own color
         container
         parameter   : Parameter
         location    : Location
-        data        : TimeSeriesDataOptions
+        data        : TimeSeriesData
         chartOptions: JSON
         finally     : function(timeSeries) (optional) Called when all data are loaded.
                         Used when eg. not all data-source need there own series but need to be combined

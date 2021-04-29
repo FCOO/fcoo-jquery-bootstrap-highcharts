@@ -10993,6 +10993,8 @@ form.form-validation .form-group {
   padding: 0.3125rem 0.3125rem;
   border: 1px solid #ced4da;
   border-radius: 0.25rem; }
+  .input-group-border.input-group-border-dark {
+    border-color: black; }
   .input-group-border.input-group-sm, .input-group-border.input-group-xs {
     padding: 0.25rem 0.25rem;
     border-radius: 0.1875rem; }
