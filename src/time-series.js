@@ -232,9 +232,12 @@ axis        : Each parameter get own y-axis in own color
 
         this.z = options.z || null;
 
+        options.location = options.location || '';
         this.location  = $.isArray(options.location)  ? options.location  : [options.location];
         this.locationName = [];
-        $.each(this.location, function(index, loc){ _this.locationName[index] = $._bsAdjustIconAndText(loc).text; });
+        $.each(this.location, function(index, loc){
+            _this.locationName[index] = loc ? $._bsAdjustIconAndText(loc).text : '';
+        });
         this.multiLocation = this.location.length > 1;
 
         this.singleSingle = !this.multiParameter && !this.multiLocation;
