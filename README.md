@@ -15,7 +15,7 @@ http://FCOO.github.io/fcoo-jquery-bootstrap-highcharts/demo/
 
 
 ## Usage
-TODO
+See documentation in the src-files
 
 <!--
 ```var myFcooJqueryBootstrapHighcharts = new FcooJqueryBootstrapHighcharts( options );```

@@ -1,7 +1,7 @@
 /****************************************************************************
 time-series.js
 
-A time-serie chart can by type 1: or 2:
+A time-series chart can by type 1: or 2:
 
 1. Data from a single parameter from one location. Ea. sealevel at Drogden
 title       : Location name
@@ -43,24 +43,39 @@ axis        : Each parameter get own y-axis in own color
         ['#005E93', '#573B93', '#A40F1C', '#AF4104', '#00727D', '#AA7D00', '#B10C5C', '#3B7511', '#434649'],
         ['#004471', '#452B7F', '#88001A', '#903000', '#005C69', '#8B6700', '#870044', '#295A10', '#303336']
     ];
-//Default color: index 4
 
-    var colorList = linkedinPalette[4];
+    function getColorList(colorGroupIndex){
+        var result = [];
+        //Set color sequence = Blue, Red, Green, Yellow, Gray,  Purple, Pink, Cyan, Orange
+        $.each([0, 2, 7, 5, 8, 1, 6, 4, 3], function(dummy, colorIndex){
+            result.push( linkedinPalette[colorGroupIndex][colorIndex]);
+        });
+        return result;
+    }
 
-    //Set color sequence = Blue, Red, Green, Yellow, Gray,  Purple, Pink, Cyan, Orange
-    Highcharts.setOptions({
-        colors: [
-            colorList[0],
-            colorList[2],
-            colorList[7],
-            colorList[5],
-            colorList[8],
-            colorList[1],
-            colorList[6],
-            colorList[4],
-            colorList[3]
-        ]
+    //Default color-group = 4
+    var defaultColorGroup = 4;
+    Highcharts.setOptions({colors: getColorList(defaultColorGroup)});
+
+    function getDeltaColorList(deltaColorGroupIndex){
+        return getColorList(defaultColorGroup + deltaColorGroupIndex);
+    }
+
+    /*
+    Fix to allow more than two series linked together being highlighted when hover
+    Highcharts.addEvent(Highcharts.Chart, 'afterLinkSeries', function(e) {
+        this.series.forEach(function(s) {
+            if (s.linkedParent) {
+                s.linkedParent.linkedSeries.forEach(function(linkedS) {
+                    if (linkedS !== s) {
+                        s.linkedSeries.push(linkedS);
+                    }
+                });
+            }
+        });
     });
+    */
+
 
 
     /*********************************************************
@@ -97,8 +112,8 @@ axis        : Each parameter get own y-axis in own color
 
     /****************************************************************************
     convert-function.
-    Every timeSeriesData (see below) must provide a convert-function that receive
-    the data read from a data-file or the data given directly to the TimeSerieData-constructor
+    Every singleTimeSeries (see below) must provide a convert-function that receive
+    the data read from a data-file or the data given directly to the SingleTimeSeries-constructor
     and return a object or array with info regarding series-data etc.:
     Variation 1:
     {
@@ -120,7 +135,7 @@ axis        : Each parameter get own y-axis in own color
 
     standardConvert
     ****************************************************************************/
-    function standardConvert(data/*, timeSeriesData*/){
+    function standardConvert(data/*, singleTimeSeries*/){
         return {
             data         : data.data || this.data,
             pointStart   : data.start || data.pointStart || this.start,
@@ -129,28 +144,56 @@ axis        : Each parameter get own y-axis in own color
     }
 
     /****************************************************************************
-    timeSeriesData: A object used to load data for a single time-serie or time-range-serie
-    and convert in into the right HC-format
+    SingleTimeSeries
+    A object used to set style and load data for a single time-series or time-range-series and convert in into the right HC-format.
+    It is possible to have one timeserie containing multi data-series.
 
-    options:
+    DATAOPTIONS = options for one set of data. It could be all the data for a serei or part of the series
+
+    1: DATAOPTIONS = {
         start   : STRING. Moment-string
         interval: STRING. Moment-duration
         data    : []FLOAT
-    or
-        fileName: STRING or {mainDir:STRING|BOOLEAN, subDirName:STRING, fileName:STRING} See fcoo-data-files
-        convert : FUNCTION(data, timeSeriesData): Convert data into the correct format in TimeSeriesData
+    }
 
+    or
+
+    2: DATAOPTIONS = {
+        data: [][FLOAT, FLOAT]
+    }
+
+    or
+
+    3: DATAOPTIONS = [][FLOAT, FLOAT]
+
+    or
+
+    4: DATAOPTIONS = {
+        fileName: STRING or {mainDir:STRING|BOOLEAN, subDirName:STRING, fileName:STRING} See fcoo-data-files
+        convert : FUNCTION(data, singleTimeSeries): Convert data into the correct format in SingleTimeSeries
+    }
+
+
+
+    SingleTimeSeries(options) where
+    options = DATAOPTIONS or options = []DATAOPTIONS
     ****************************************************************************/
-    var TimeSeriesData = function(options){
+    var SingleTimeSeries = function(options){
+
+
         this.start      = options.start || null;
         this.interval   = options.interval || null;
         this.data       = options.data || null;
 
         this.fileName   = options.fileName || null;
         this.convert    = options.convert || standardConvert;
+
+//HER        this.tooltipPrefix  = options.tooltipPrefix;
+//HER        this.tooltipPostfix = options.tooltipPostfix;
+//HERconsole.log(this.tooltipPrefix);
     };
 
-    TimeSeriesData.prototype = {
+    SingleTimeSeries.prototype = {
         promiseListOptions: function(){
             return {
                 fileName: this.fileName ? ns.path.dataFileName(this.fileName) : null,
@@ -161,7 +204,7 @@ axis        : Each parameter get own y-axis in own color
 
         //Update the chart with the info returned from the convert-function
         resolve: function(data){
-            var seriesOptions = {},
+            var seriesDataOptions = {},
                 options = this.convert(data, this);
 
             if (options.pointStart){
@@ -170,7 +213,7 @@ axis        : Each parameter get own y-axis in own color
                 if (pointInterval && (typeof pointInterval == 'string'))
                     pointInterval = moment.duration(pointInterval).milliseconds();
 
-                seriesOptions = {
+                seriesDataOptions = {
                     pointStart       : moment(options.pointStart).valueOf(),
                     pointInterval    : pointInterval,
                     pointIntervalUnit: options.pointIntervalUnit || null,
@@ -179,13 +222,13 @@ axis        : Each parameter get own y-axis in own color
 
             if (options.data)
                 //Variation 2
-                seriesOptions.data = options.data;
+                seriesDataOptions.data = options.data;
             else
                 //Variation 3
-               seriesOptions.data = options;
+               seriesDataOptions.data = options;
 
 
-            this.series.update(seriesOptions, false);
+            this.series.update(seriesDataOptions, false);
         }
     };
 
@@ -197,10 +240,20 @@ axis        : Each parameter get own y-axis in own color
         container
         parameter   : []Parameter or Parameter
         location    : []Location Or Location
-        data        : []TimeSeriesData or TimeSeriesData
+        series      : []SingleTimeSeries or SingleTimeSeries
+        styles      : Same array structure as series with SERIESTYLE
         chartOptions: JSON
         finally     : function(timeSeries) (optional) Called when all data are loaded.
-                        Used when eg. not all data-source need there own series but need to be combined
+    }
+    SERIESTYLE = {
+        color       : NUMBER = index in default color-list (Blue, Red, Green,...)
+        deltaColor  : NUMBER is relative to defaultColorGroup (+ = darker - = lighter)
+        marker      : true, STRING, false. true: Next default marker, false: no marker
+        noTooltip   : BOOLEAN. When true the series do not have a tooltip
+
+        lineWidth   : NUMBER
+        dashStyle   : STRING Default = 'Solid' See https://jsfiddle.net/gh/get/library/pure/highcharts/highcharts/tree/master/samples/highcharts/plotoptions/series-dashstyle-all/
+                      Possible values: 'Solid','ShortDash','ShortDot','ShortDashDot','ShortDashDotDot','Dot','Dash','LongDash','DashDot','LongDashDot','LongDashDotDot'
     }
     ****************************************************************************/
     function BaseTimeSeries(options){
@@ -242,20 +295,141 @@ axis        : Each parameter get own y-axis in own color
 
         this.singleSingle = !this.multiParameter && !this.multiLocation;
 
-        this.data  = $.isArray(options.data)  ? options.data : [options.data];
-        $.each(this.data, function(index, opt){
-            var timeSerieData = new TimeSeriesData(opt);
+        this.series    = [];  //= [] of the main series
+        this.subSeries = [];  //= [] of the sub series. If a series contains of multi series the first is added to this.series and the rest to subSeries with link to legend and axis for the first series
 
-            timeSerieData.index = index;
-            timeSerieData.timeSeries = _this;
-            timeSerieData.parameter  = _this.multiParameter ? _this.parameter[index] : _this.parameter[0];
-            timeSerieData.location   = _this.multiLocation  ? _this.location[index]  : _this.location[0];
+        this.anyHasTooltip  = false; //true if at least one series has tooltip. Is updated when a series is added using this._createSingleTimeSeries
+        this.allHaveTooltip = true;  //true if ALL series have tooltip. Is updated when a series is added using this._createSingleTimeSeries
 
-            _this.data[index] = timeSerieData;
+        var styles = options.styles || {};
+        styles = $.isArray(styles) ? styles : [styles];
+
+        $.each($.isArray(options.series)  ? options.series : [options.series], function(index, opt){
+            var style = styles[index] || {};
+
+            //If opt is an array => check if it is a list of sub-series. If first element is a [FLOAT, FLOAT] => opt is data for a single series, else opt is a multi series
+            if ($.isArray(opt)){
+                var first = opt[0],
+                    styleList = $.isArray(style) ? style : [style];
+
+                if ($.isArray(first) && (first.length == 2) && (typeof first[1] == 'number'))
+                    // opt is a array with data for one series
+                    _this.series.push( _this._createSingleTimeSeries({data: opt}, index, styleList[0]) );
+                else {
+                    //The dataset contains multi sub sets. The first sub set is added as primary set ande the rest is added as sub set => Add first set as main
+                    var mainSingleTimeSeries = _this._createSingleTimeSeries(opt[0], index, styleList[0]);
+                    _this.series.push(mainSingleTimeSeries);
+
+                    //Add the rest as sub series
+                    $.each(opt, function(subIndex, subOpt){
+                        if (subIndex)
+                            _this.subSeries.push( _this._createSingleTimeSeries(subOpt, index, styleList[subIndex], mainSingleTimeSeries.style) );
+                    });
+                }
+            }
+            else
+                _this.series.push( _this._createSingleTimeSeries(opt, index, style) );
         });
     }
 
     BaseTimeSeries.prototype = {
+        //**********************************************
+        _createSingleTimeSeries(options, index, style = {}, siblingStyle = {}){
+            options = $.isArray(options) ? {data: options} : options;
+
+            var singleTimeSeries = new SingleTimeSeries(options);
+
+            singleTimeSeries.index = index;
+            singleTimeSeries.timeSeries = this;
+            singleTimeSeries.parameter  = this.multiParameter ? this.parameter[index] : this.parameter[0];
+            singleTimeSeries.location   = this.multiLocation  ? this.location[index]  : this.location[0];
+
+            var s = singleTimeSeries.style = $.extend(true, {
+                //Default series style
+                color     : index,
+                deltaColor: 0,
+                marker    : true,
+                lineWidth : 1,
+                dashStyle : 'Solid',
+                noTooltip : false
+            }, siblingStyle, style);
+
+            //seriesStyle = Adjusted style for the series
+            var ss = singleTimeSeries.seriesStyle = {
+                color    : getDeltaColorList(s.deltaColor)[s.color],
+                lineWidth: s.lineWidth,
+                dashStyle: s.dashStyle,
+                marker   : {
+                    enabled: !!s.marker,
+                    symbol : ''
+                },
+                noTooltip       : !!s.noTooltip,
+                tooltipPrefix   : s.tooltipPrefix  ? $._bsAdjustText( s.tooltipPrefix  ) : null,
+                tooltipPostfix  : s.tooltipPostfix ? $._bsAdjustText( s.tooltipPostfix ) : null
+            };
+
+            if (s.marker){
+                var symbolList = Highcharts.getOptions().symbols;
+                ss.marker.symbol = s.marker === true ? symbolList[index % symbolList.length] : s.marker;
+            }
+
+            ss.marker.states = {hover: {enabled: !!s.marker || !s.noTooltip}};
+
+            this.anyHasTooltip = this.anyHasTooltip || !s.noTooltip;
+            if (s.noTooltip)
+                this.allHaveTooltip = false;
+
+            return singleTimeSeries;
+        },
+
+        //**********************************************
+        _tooltip_get_prefix: function(point, id = 'Prefix'){
+            var value = point.series.options['tooltip'+id];
+            return value ? i18next.s(value) : '';
+        },
+        _tooltip_get_postfix: function(point){
+            return this._tooltip_get_prefix(point, 'Postfix');
+        },
+
+
+        //_tooltip_pointFormatter_single - called with this == Point
+        _tooltip_pointFormatter_single: function(timeSeries){
+            if (this.series.options.noTooltip)
+                return '';
+            return  `<tr>
+                        <td class="chart-tooltip-value">` +
+                            timeSeries._tooltip_get_prefix(this) +
+                            timeSeries.valueFormatter(this)  +
+                            timeSeries._tooltip_get_postfix(this) +
+                        `</td>
+                    </tr>`;
+        },
+
+        //_tooltip_pointFormatter_multi - called with this == Point
+        _tooltip_pointFormatter_multi: function(timeSeries){
+            if (this.series.options.noTooltip)
+                return '';
+
+            var prefix    = timeSeries._tooltip_get_prefix(this),
+                serieName = i18next.s( $._bsAdjustText( timeSeries.multiLocation ? this.series.name : this.series.options.nameInTooltip ) ),
+                postfix   = timeSeries._tooltip_get_postfix(this);
+            return  `<tr>
+                        <td class="chart-tooltip-name" style="color:${this.color}">
+                            ${prefix}${serieName}${postfix}&nbsp;
+                        </td>
+                        <td class="chart-tooltip-value">` +
+                            timeSeries.valueFormatter(this)  +
+                        `</td>
+                    </tr>`;
+        },
+
+        valueFormatter: function(point){
+            return '<b>'+point.formatValue(point.y)+'</b>';
+        },
+
+        //**********************************************
+        _finally: function(){},
+
         //**********************************************
         set: function(path, options){
             path = path.split('.');
@@ -270,35 +444,6 @@ axis        : Each parameter get own y-axis in own color
             }
             obj[id] = options;
         },
-
-
-        //**********************************************
-        _tooltip_pointFormatter_single: function(timeSeries){
-            return  `<tr>
-                        <td class="chart-tooltip-value">` +
-                            timeSeries.valueFormatter(this)  +
-                        `</td>
-                    </tr>`;
-        },
-
-        _tooltip_pointFormatter_multi: function(timeSeries){
-            var serieName = i18next.s( $._bsAdjustText( timeSeries.multiLocation ? this.series.name : this.series.options.nameInTooltip ) );
-            return  `<tr>
-                        <td class="chart-tooltip-name" style="color:${this.color}">
-                            ${serieName}&nbsp;
-                        </td>
-                        <td class="chart-tooltip-value">` +
-                            timeSeries.valueFormatter(this)  +
-                        `</td>
-                    </tr>`;
-        },
-
-        valueFormatter: function(point){
-            return '<b>'+point.formatValue(point.y)+'</b>';
-        },
-
-        //**********************************************
-        _finally: function(){},
 
         //**********************************************
         createChart: function(){
@@ -337,26 +482,48 @@ axis        : Each parameter get own y-axis in own color
             this.set('plotOptions.series.pointInterval', 60*60*1000);
 
             //Tooltips
-            //Set common tooltip for single parameter-mode (in multi-parameter mode the tooltip is set pro series
-            chartOptions.tooltip = this.parameter[0].hcOptions_series_tooltip('', this.z);
+            this.set('tooltip.enabled', this.anyHasTooltip);
+            if (this.anyHasTooltip){
+                //Set common tooltip for single parameter-mode (in multi-parameter mode the tooltip is set pro series
+                chartOptions.tooltip = this.parameter[0].hcOptions_series_tooltip('', this.z);
 
-            this.set('tooltip.shared', true);
-            this.set('tooltip.split', false);
+                this.set('tooltip.shared', true);
+                this.set('tooltip.split', false);
 
-            this.set('tooltip.borderColor', '#868e96'); //Hard-coded from jquery-bootstrap!
-            this.set('tooltip.borderRadius', 8);
+                this.set('tooltip.borderColor', '#868e96'); //Hard-coded from jquery-bootstrap!
+                this.set('tooltip.borderRadius', 8);
 
-            this.set('tooltip.headerFormat', '<span class="chart-tooltip-time">{point.key}</span><table class="chart-tooltip-table">');
-            if (this.singleSingle){
-                //Single location and paramater
-                this.set('tooltip.pointFormatter', function(){ return _this._tooltip_pointFormatter_single.call(this, _this); });
-            }
-            else {
-                //Display multi paramater or location in a table to have correct align
-                this.set('tooltip.pointFormatter', function(){ return _this._tooltip_pointFormatter_multi.call(this, _this); });
-            }
-            this.set('tooltip.footerFormat', '</table>');
+                this.set('tooltip.headerFormat', '<span class="chart-tooltip-time">{point.key}</span><table class="chart-tooltip-table">');
+                if (this.singleSingle){
+                    //Single location and paramater
+                    this.set('tooltip.pointFormatter', function(){
+                        return _this._tooltip_pointFormatter_single.call(this, _this);
+                    });
+                }
+                else {
+                    //Display multi paramater or location in a table to have correct align
+                    this.set('tooltip.pointFormatter', function(){
+                        return _this._tooltip_pointFormatter_multi.call(this, _this);
+                    });
+                }
+                this.set('tooltip.footerFormat', '</table>');
 
+                if (!this.allHaveTooltip){
+                    //Check if the current series has tooltip and hide it if not
+                    this.set('tooltip.formatter', function(tooltip){
+                        var points = this.point ? [this.point] : this.points || [],
+                            showTooltip = false;
+
+                        $.each(points, function(index, point){
+                            if (!point.series.options.noTooltip){
+                                showTooltip = true;
+                                return true;
+                            }
+                        });
+                        return showTooltip ? tooltip.defaultFormatter.call(this, tooltip) : false;
+                    });
+                }
+            } //if (this.anyHasTooltip){...
 
             //y-axis - if one parameter => no text on axis
             chartOptions.yAxis = [];
@@ -372,7 +539,7 @@ axis        : Each parameter get own y-axis in own color
                 seriesAxisIndex = Array(this.location.length).fill(0);
             }
             else {
-                //The y-axis for multi-parameter is added in a order to have the y-axis in the same order (left to rigth) as the serie legned
+                //The y-axis for multi-parameter is added in a order to have the y-axis in the same order (left to rigth) as the series legned
                 //The first half of the y-axis is palced to the left but added in revers order to have the first series axis to the left
                 //The rest of the axis are added on the right side
                 //Eg. 5 y-axis (0-4) must be added in the order 2,1,0,3,4 to have position 0 1 2 chart 3 4
@@ -384,7 +551,7 @@ axis        : Each parameter get own y-axis in own color
                         seriesAxisIndex.push(i);
 
                 $.each(this.parameter, function(index, parameter){
-                    var color = Highcharts.getOptions().colors[index],
+                    var color = _this.series[index].seriesStyle.color,
                         style = {color: color},
                         nextAxis = {
                             lineColor: color,
@@ -413,20 +580,34 @@ axis        : Each parameter get own y-axis in own color
                     chartOptions.series.push({
                         name         : parameter.decodeGetName(true, false, _this.z),
                         nameInTooltip: parameter.decodeGetName(false, true, _this.z),
-                        color        : Highcharts.getOptions().colors[index],
                         yAxis        : seriesAxisIndex[index],
                         tooltip      : parameter.hcOptions_series_tooltip('', _this.z),
-data: [1,2,3,4,5,6,7]
+data: [1,2,3,2,1,2,3],
                     });
                 });
             else {
                 $.each(this.locationName, function(index, location){
-                    chartOptions.series.push({
-                        name    : location,
-                        color   : Highcharts.getOptions().colors[index],
-                    });
+                    chartOptions.series.push({name: location});
                 });
             }
+
+            //Set style for the added series
+            $.each(chartOptions.series, function(index, seriesOptions){
+                chartOptions.series[index] = $.extend(true, seriesOptions, _this.series[index].seriesStyle);
+            });
+
+            //Add sub series
+            var seriesLength = chartOptions.series.length;
+            $.each(this.subSeries, function(subSeriesIndex, opt){
+                var seriesOptions = $.extend(true, {}, chartOptions.series[opt.index]);
+                seriesOptions.id = 'fcoo_series_' + chartOptions.series.length;
+
+                chartOptions.series[opt.index].id = 'fcoo_series_'+opt.index;
+                seriesOptions.linkedTo = chartOptions.series[seriesLength + subSeriesIndex - 1].id;
+
+                seriesOptions = $.extend(true, seriesOptions, opt.seriesStyle);
+                chartOptions.series.push(seriesOptions);
+            });
 
             //Create the chart
             var chart = this.chart = this.chartConstructor(this.options.container, this.chartOptions/*, callback*/);
@@ -443,12 +624,17 @@ data: [1,2,3,4,5,6,7]
 
                 }
             });
-            $.each(this.data, function(index, timeSeriesData){
-                timeSeriesData.series = chart.series[index];
-                chart.promiseList.append( timeSeriesData.promiseListOptions() );
+            $.each(this.series, function(index, singleTimeSeries){
+                singleTimeSeries.series = chart.series[index];
+                chart.promiseList.append( singleTimeSeries.promiseListOptions() );
             });
-            chart.promiseList.promiseAll();
+            var thisSeriesLength = this.series.length;
+            $.each(this.subSeries, function(index, singleTimeSeries){
+                singleTimeSeries.series = chart.series[thisSeriesLength + index];
+                chart.promiseList.append( singleTimeSeries.promiseListOptions() );
+            });
 
+            chart.promiseList.promiseAll();
             return chart;
         }
     };
@@ -456,15 +642,14 @@ data: [1,2,3,4,5,6,7]
 
     /****************************************************************************
     TimeSeries
-    Create a single line time-serie
+    Create a single line time-series
     options = {
         container
         parameter   : []Parameter or Parameter
         location    : []Location Or Location
-        data        : []TimeSeriesData or TimeSeriesData
+        series      : []SingleTimeSeries or SingleTimeSeries
         chartOptions: JSON
         finally     : function(timeSeries) (optional) Called when all data are loaded.
-                        Used when eg. not all data-source need there own series but need to be combined
     }
     ****************************************************************************/
     function TimeSeries(options){
@@ -485,15 +670,14 @@ data: [1,2,3,4,5,6,7]
 
     /****************************************************************************
     HistoricalTimeSeries
-    Create a historical single line time-serie with min, max and mean
+    Create a historical single line time-series with min, max and mean
     options = {
         container
         parameter   : Parameter
         location    : Location
-        data        : TimeSeriesData
+        series      : []SingleTimeSeries or SingleTimeSeries
         chartOptions: JSON
         finally     : function(timeSeries) (optional) Called when all data are loaded.
-                        Used when eg. not all data-source need there own series but need to be combined
     }
     ****************************************************************************/
     function HistoricalTimeSeries(options){
