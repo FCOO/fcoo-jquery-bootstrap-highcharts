@@ -145,6 +145,9 @@ Meteorogram: https://www.highcharts.com/demo/combo-meteogram#https://www.yr.no/p
 
             plotOptions: {
                 series: {
+                    clip: false,    //Disable this option to allow series rendering in the whole plotting area. Note: Clipping should be always enabled when chart.zoomType is set. Defaults to true.
+                                    //NOTE: Must be false for charts created with stockhighcharts to work properly.
+
                     //pointWidth: undefined,    //A pixel value specifying a fixed width for each column or bar point.
                                                 //When set to undefined, the width is calculated from the pointPadding and groupPadding.
                                                 //The width effects the dimension that is not based on the point value. For column series it is the hoizontal length and for bar series it is the vertical length.

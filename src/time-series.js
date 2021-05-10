@@ -187,10 +187,6 @@ axis        : Each parameter get own y-axis in own color
 
         this.fileName   = options.fileName || null;
         this.convert    = options.convert || standardConvert;
-
-//HER        this.tooltipPrefix  = options.tooltipPrefix;
-//HER        this.tooltipPostfix = options.tooltipPostfix;
-//HERconsole.log(this.tooltipPrefix);
     };
 
     SingleTimeSeries.prototype = {
@@ -364,8 +360,12 @@ axis        : Each parameter get own y-axis in own color
                     symbol : ''
                 },
                 noTooltip       : !!s.noTooltip,
-                tooltipPrefix   : s.tooltipPrefix  ? $._bsAdjustText( s.tooltipPrefix  ) : null,
-                tooltipPostfix  : s.tooltipPostfix ? $._bsAdjustText( s.tooltipPostfix ) : null
+                tooltipPrefix       : s.tooltipPrefix       ? $._bsAdjustText( s.tooltipPrefix       ) : null,
+                tooltipLabelPrefix  : s.tooltipLabelPrefix  ? $._bsAdjustText( s.tooltipLabelPrefix  ) : null,
+                tooltipLabelPostfix : s.tooltipLabelPostfix ? $._bsAdjustText( s.tooltipLabelPostfix ) : null,
+                tooltipValuePrefix  : s.tooltipValuePrefix  ? $._bsAdjustText( s.tooltipValuePrefix  ) : null,
+                tooltipValuePostfix : s.tooltipValuePostfix ? $._bsAdjustText( s.tooltipValuePostfix ) : null,
+                tooltipPostfix      : s.tooltipPostfix      ? $._bsAdjustText( s.tooltipPostfix      ) : null
             };
 
             if (s.marker){
@@ -383,12 +383,16 @@ axis        : Each parameter get own y-axis in own color
         },
 
         //**********************************************
-        _tooltip_get_prefix: function(point, id = 'Prefix'){
-            var value = point.series.options['tooltip'+id];
-            return value ? i18next.s(value) : '';
-        },
-        _tooltip_get_postfix: function(point){
-            return this._tooltip_get_prefix(point, 'Postfix');
+        _tooltip_get_fix: function(point){
+            var result = {};
+            $.each(['Prefix', 'Postfix'], function(index, position){
+                $.each(['', 'Label', 'Value'], function(index2, subId){
+                    var id = 'tooltip' + subId + position,
+                        value = point.series.options[id];
+                    result[id] = value ? i18next.s(value) : '';
+                });
+            });
+            return result;
         },
 
 
@@ -396,11 +400,14 @@ axis        : Each parameter get own y-axis in own color
         _tooltip_pointFormatter_single: function(timeSeries){
             if (this.series.options.noTooltip)
                 return '';
+            var fix = timeSeries._tooltip_get_fix(this);
             return  `<tr>
                         <td class="chart-tooltip-value">` +
-                            timeSeries._tooltip_get_prefix(this) +
+                            fix.tooltipPrefix +
+                            fix.tooltipLabelPrefix +
                             timeSeries.valueFormatter(this)  +
-                            timeSeries._tooltip_get_postfix(this) +
+                            fix.tooltipLabelPostfix +
+                            fix.tooltipPostfix +
                         `</td>
                     </tr>`;
         },
@@ -410,15 +417,18 @@ axis        : Each parameter get own y-axis in own color
             if (this.series.options.noTooltip)
                 return '';
 
-            var prefix    = timeSeries._tooltip_get_prefix(this),
-                serieName = i18next.s( $._bsAdjustText( timeSeries.multiLocation ? this.series.name : this.series.options.nameInTooltip ) ),
-                postfix   = timeSeries._tooltip_get_postfix(this);
+            var serieName = i18next.s( $._bsAdjustText( timeSeries.multiLocation ? this.series.name : this.series.options.nameInTooltip ) ),
+                fix = timeSeries._tooltip_get_fix(this);
+
             return  `<tr>
                         <td class="chart-tooltip-name" style="color:${this.color}">
-                            ${prefix}${serieName}${postfix}&nbsp;
+                            ${fix.tooltipPrefix}${fix.tooltipLabelPrefix}${serieName}${fix.tooltipLabelPostfix}&nbsp;
                         </td>
                         <td class="chart-tooltip-value">` +
+                            fix.tooltipValuePrefix +
                             timeSeries.valueFormatter(this)  +
+                            fix.tooltipValuePostfix +
+                            fix.tooltipPostfix +
                         `</td>
                     </tr>`;
         },

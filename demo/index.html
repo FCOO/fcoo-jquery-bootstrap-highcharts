@@ -177,12 +177,12 @@
                                     }, 
                                     {   deltaColor: +2, 
                                         tooltipPrefix: {da:' (DA) ', en:' (EN) '},                         
-                                        //noTooltip: false,
+                                        noTooltip: false,
                                         marker: false, dashStyle:'DashDot', 
                                     }, 
                                     {   deltaColor: -2, 
                                         tooltipPrefix: '',
-                                        //noTooltip: false,
+                                        noTooltip: false,
                                         marker: false, dashStyle: 'Dash'
                                     }
                                 ]
@@ -230,7 +230,6 @@
 
 
             $('<button style="width:100%">Long 1xP + 1xL</button>').on('click', function(){
-alert('Not working!'); return;
                 if (mainChart) mainChart.destroy(); 
                 mainChart = fcoo.hc.historicalTimeSeries({
                     container: $mainContainer,
@@ -243,7 +242,6 @@ alert('Not working!'); return;
             }).appendTo(main.leftMenu.$menu);
 
             $('<button style="width:100%">Long 1xP + 3xL</button>').on('click', function(){
-alert('Not working!'); return;
                 if (mainChart) mainChart.destroy(); 
                 mainChart = fcoo.hc.historicalTimeSeries({
                     container: $mainContainer,
@@ -257,7 +255,6 @@ alert('Not working!'); return;
             }).appendTo(main.leftMenu.$menu);
 
             $('<button style="width:100%">Long 3xP + 1xL</button>').on('click', function(){
-alert('Not working!'); return;
                 if (mainChart) mainChart.destroy(); 
                 mainChart = fcoo.hc.historicalTimeSeries({
                     container: $mainContainer,
