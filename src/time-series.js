@@ -180,7 +180,6 @@ axis        : Each parameter get own y-axis in own color
     ****************************************************************************/
     var SingleTimeSeries = function(options){
 
-
         this.start      = options.start || null;
         this.interval   = options.interval || null;
         this.data       = options.data || null;
@@ -617,6 +616,11 @@ data: [1,2,3,2,1,2,3],
                 seriesOptions = $.extend(true, seriesOptions, opt.seriesStyle);
                 chartOptions.series.push(seriesOptions);
             });
+
+//HERconsole.log(chartOptions.series);
+//HER//HER chartOptions.series[0].connectNulls = true;
+//HERchartOptions.series[0].gapSize = 3 * 12*60*60*1000;
+//HERchartOptions.series[0].gapUnit = 'value';
 
             //Create the chart
             var chart = this.chart = this.chartConstructor(this.options.container, this.chartOptions/*, callback*/);

@@ -38,12 +38,14 @@
 
             var startM = moment().year(1999),
                 startDate = startM.toDate(),
-                interval = 12 * 60 * 60 * 1000, //12 hour
+                s = startDate.valueOf(),
+                i = interval = 12 * 60 * 60 * 1000, //12 hour
                 list = [{
                     start   : startDate, 
                     interval: interval,
                     data    : [.43934, .52503, .57177, .69658, .97031, 1.19931, 1.37133, 1.54175]
-                },{
+                },
+                {
                     start   : startDate, 
                     interval: interval,
                     data    : [249.16, 240.64, 297.42, 298.51, 324.90, 302.82, 381.21, 404.34]
@@ -78,7 +80,8 @@
                 }];
 
 
-            var dataList = [],
+            var test = [[s+0*i, 249.16], /*[s+1*i, 240.64], [s+2*i, 297.42], */[s+3*i, 298.51], [s+4*i, 324.90], [s+5*i, 302.82], [s+6*i, 381.21], [s+7*i, 404.34]],
+                dataList = [],
                 nextStart = moment().year(1999);
     
             $.each([3,1,2], function(dymmy, listIndex){
@@ -157,7 +160,7 @@
             }
             
             function addButton4(text, parameter, location, series){
-                $('<button style="width:100%">'+text+'</button>')
+                return $('<button style="width:100%">'+text+'</button>')
                     .on('click', function(){
                         if (mainChart) 
                             mainChart.destroy(); 
@@ -169,6 +172,7 @@
                             series   : series,
         
                             styles: [
+                                {lineWidth:5, _color:2},
                                 [
                                     {   _color     :  0, 
                                         marker: false,
@@ -184,9 +188,7 @@
                                         noTooltip: false,
                                         marker: false, dashStyle: 'Dash'
                                     }
-                                ],
-                                {lineWidth:5, _color:2}
-
+                                ]
                             ],
                             //styles: [[{color:8}, {deltaColor: +2, marker: false, dashStyle:'DashDot'}, {deltaColor: -2, marker: false, dashStyle: 'Dash'}]],                 
                             chartOptions: { 
@@ -207,7 +209,7 @@
 
             addButton3('Modal 1xP (SeaLevel)  + 1xL (no name)', ['sea_surface_height_above_mean_sea_level'], false);                        
             
-            addButton4('2xP (Multi series) + 1xL', ['sea_water_velocity', 'sea_surface_height_above_mean_sea_level'], {da: 'Lokationen', en:'The Location'}, [dataList, list[1]]);                        
+            var $test = addButton4('2xP (Multi series) + 1xL', ['sea_water_velocity', 'sea_surface_height_above_mean_sea_level'], {da: 'Lokationen', en:'The Location'}, [test/*list[1]*/, dataList]);                        
 
 
             
@@ -288,7 +290,8 @@
                             chartOptions: { container: { css: {height:'50%'} } }
                         });
                         */
-                        
+                  
+                        $test.trigger('click');
                     });
                 };
                 fcoo.promiseList_getAll();
