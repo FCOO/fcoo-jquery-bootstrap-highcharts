@@ -169,7 +169,6 @@
                             series   : series,
         
                             styles: [
-                                {lineWidth:5, _color:2}, 
                                 [
                                     {   _color     :  0, 
                                         marker: false,
@@ -185,7 +184,9 @@
                                         noTooltip: false,
                                         marker: false, dashStyle: 'Dash'
                                     }
-                                ]
+                                ],
+                                {lineWidth:5, _color:2}
+
                             ],
                             //styles: [[{color:8}, {deltaColor: +2, marker: false, dashStyle:'DashDot'}, {deltaColor: -2, marker: false, dashStyle: 'Dash'}]],                 
                             chartOptions: { 
@@ -206,7 +207,7 @@
 
             addButton3('Modal 1xP (SeaLevel)  + 1xL (no name)', ['sea_surface_height_above_mean_sea_level'], false);                        
             
-            addButton4('2xP (Multi series) + 1xL', ['sea_water_velocity', 'sea_surface_height_above_mean_sea_level'], {da: 'Lokationen', en:'The Location'}, [list[1], dataList]);                        
+            addButton4('2xP (Multi series) + 1xL', ['sea_water_velocity', 'sea_surface_height_above_mean_sea_level'], {da: 'Lokationen', en:'The Location'}, [dataList, list[1]]);                        
 
 
             

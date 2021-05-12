@@ -1056,19 +1056,18 @@ data: [1,2,3,2,1,2,3],
                 });
             }
 
-            //Set style for the added series
+            //Set style and id for the added series
             $.each(chartOptions.series, function(index, seriesOptions){
                 chartOptions.series[index] = $.extend(true, seriesOptions, _this.series[index].seriesStyle);
+                chartOptions.series[index].id =  'fcoo_series_' + index;
             });
 
             //Add sub series
-            var seriesLength = chartOptions.series.length;
             $.each(this.subSeries, function(subSeriesIndex, opt){
+                //seriesOptions = options for the new sub series = copy of the serties it is sub to
                 var seriesOptions = $.extend(true, {}, chartOptions.series[opt.index]);
                 seriesOptions.id = 'fcoo_series_' + chartOptions.series.length;
-
-                chartOptions.series[opt.index].id = 'fcoo_series_'+opt.index;
-                seriesOptions.linkedTo = chartOptions.series[seriesLength + subSeriesIndex - 1].id;
+                seriesOptions.linkedTo = 'fcoo_series_' + opt.index;
 
                 seriesOptions = $.extend(true, seriesOptions, opt.seriesStyle);
                 chartOptions.series.push(seriesOptions);
