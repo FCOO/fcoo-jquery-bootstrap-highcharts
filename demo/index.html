@@ -38,7 +38,7 @@
 
             var startM = moment().year(1999),
                 startDate = startM.toDate(),
-                s = startDate.valueOf(),
+                s = startM.valueOf(),
                 i = interval = 12 * 60 * 60 * 1000, //12 hour
                 list = [{
                     start   : startDate, 
@@ -80,7 +80,7 @@
                 }];
 
 
-            var test = [[s+0*i, 249.16], /*[s+1*i, 240.64], [s+2*i, 297.42], */[s+3*i, 298.51], [s+4*i, 324.90], [s+5*i, 302.82], [s+6*i, 381.21], [s+7*i, 404.34]],
+            var test = [[s+0*i, 249.16], /*[s+1*i, 240.64], [s+2*i, 297.42], [s+3*i, 298.51], */[s+4*i, 324.90], [s+5*i, 302.82], [s+6*i, 381.21], [s+7*i, 404.34]],
                 dataList = [],
                 nextStart = moment().year(1999);
     
@@ -110,7 +110,7 @@
 
                 var series = [];
                 for (var i=0; i<Math.max(parameter.length || 1, location.length || 1); i++){
-                    series.push( $.extend(true, {}, list[i]) );
+                    series.push({data: $.extend(true, {}, list[i]) } );
                 }
 
                 mainChart = fcoo.hc.timeSeries({
@@ -159,38 +159,49 @@
                     .appendTo(main.leftMenu.$menu);
             }
             
-            function addButton4(text, parameter, location, series){
-                return $('<button style="width:100%">'+text+'</button>')
+            function addButton4(){
+                return $('<button style="width:100%">2xP (Multi series) + 1xL</button>')
                     .on('click', function(){
                         if (mainChart) 
                             mainChart.destroy(); 
 
                         mainChart = fcoo.hc.timeSeries({
                             container: $mainContainer,
-                            parameter: parameter,
-                            location : location,
-                            series   : series,
-        
-                            styles: [
-                                {lineWidth:5, _color:2},
-                                [
-                                    {   _color     :  0, 
-                                        marker: false,
-                                        noTooltip: true
-                                    }, 
-                                    {   deltaColor: +2, 
-                                        tooltipPrefix: {da:' (DA) ', en:' (EN) '},                         
-                                        noTooltip: false,
-                                        marker: false, dashStyle:'DashDot', 
-                                    }, 
-                                    {   deltaColor: -2, 
-                                        tooltipPrefix: '',
-                                        noTooltip: false,
-                                        marker: false, dashStyle: 'Dash'
-                                    }
-                                ]
+                            //parameter: 'sea_surface_height_above_mean_sea_level',
+                            parameter: ['sea_water_velocity', 'sea_surface_height_above_mean_sea_level'],
+                            location : {da: 'Lokationen', en:'The Location'},
+                            series   : [{
+                                    color: 4, 
+                                    //data: test,
+                                    //maxGap: 12 * 60
+                                    data: list[1],
+                                    markerSize: 2,
+                                    visible: false,
+                                }, 
+
+                                [{
+                                    _color     :  0, 
+                                    marker: false,
+                                    noTooltip: true,
+                                    data: dataList[0]
+                                },{   
+                                    deltaColor: +2, 
+                                    tooltipPrefix: {da:' (DA) ', en:' (EN) '},                         
+                                    noTooltip: false,
+                                    marker: false, 
+                                    dashStyle:'DashDot', 
+                                    data: dataList[1]
+                                },{   
+                                    deltaColor: -2, 
+                                    tooltipPrefix: '',
+                                    noTooltip: false,
+                                    marker: false, 
+                                    dashStyle: 'Dash',
+                                    data: dataList[2]
+                                }]
+
                             ],
-                            //styles: [[{color:8}, {deltaColor: +2, marker: false, dashStyle:'DashDot'}, {deltaColor: -2, marker: false, dashStyle: 'Dash'}]],                 
+        
                             chartOptions: { 
                                 noLegend: true,
                                 container: { css: {height:'50%'} } 
@@ -209,7 +220,7 @@
 
             addButton3('Modal 1xP (SeaLevel)  + 1xL (no name)', ['sea_surface_height_above_mean_sea_level'], false);                        
             
-            var $test = addButton4('2xP (Multi series) + 1xL', ['sea_water_velocity', 'sea_surface_height_above_mean_sea_level'], {da: 'Lokationen', en:'The Location'}, [test/*list[1]*/, dataList]);                        
+            var $test = addButton4();                        
 
 
             
