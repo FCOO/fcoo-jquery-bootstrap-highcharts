@@ -289,6 +289,9 @@ axis        : Each parameter get own y-axis in own color
         });
         this.multiParameter = this.parameter.length > 1;
 
+        this.yAxis = this.options.yAxis || this.options.axis || {};
+        this.yAxis = $.isArray(this.yAxis) ? this.yAxis : [this.yAxis];
+
         var unitList = options.unit ? ($.isArray(options.unit) ? options.unit : [options.unit]) : [];
         $.each(this.parameter, function(index, param){
             if (unitList.length > index){
@@ -478,6 +481,7 @@ axis        : Each parameter get own y-axis in own color
             this.set('chart.zoomType', 'x');
 
             //x-axis
+            this.set('xAxis', this.options.xAxis || {});
             this.set('xAxis.crosshair', true);
             this.set('xAxis.type', 'datetime');
 
@@ -489,6 +493,8 @@ axis        : Each parameter get own y-axis in own color
             if (this.anyHasTooltip){
                 //Set common tooltip for single parameter-mode (in multi-parameter mode the tooltip is set pro series
                 chartOptions.tooltip = this.parameter[0].hcOptions_series_tooltip('', this.z);
+
+                this.set('tooltip', this.options.tooltip || {});
 
                 this.set('tooltip.shared', true);
                 this.set('tooltip.split', false);
@@ -575,6 +581,12 @@ axis        : Each parameter get own y-axis in own color
                     chartOptions.yAxis[ seriesAxisIndex[index] ] = nextAxis;
                 });
             }
+
+            //Update yAxis with other options
+            $.each(this.yAxis, function(index, options){
+                if (index < chartOptions.yAxis.length)
+                    chartOptions.yAxis[ seriesAxisIndex[index] ] = $.extend(true, chartOptions.yAxis[seriesAxisIndex[index]], options);
+            });
 
             //Name of series
             chartOptions.series = [];
