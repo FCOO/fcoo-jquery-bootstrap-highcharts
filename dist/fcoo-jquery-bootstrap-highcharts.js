@@ -477,10 +477,10 @@ axis        : Each parameter get own y-axis in own color
 
 ****************************************************************************/
 
-(function ($, Highcharts, i18next, moment, window/*, document, undefined*/) {
-	"use strict";
+(function ($, Highcharts, i18next, moment, window, document, undefined) {
+    "use strict";
 
-	//Create fcoo-namespace
+    //Create fcoo-namespace
     var ns = window.fcoo = window.fcoo || {},
         nsParameter = ns.parameter = ns.parameter || {},
         nsHC = ns.hc = ns.highcharts = ns.highcharts || {};
@@ -531,6 +531,50 @@ axis        : Each parameter get own y-axis in own color
     });
     //*/
 
+    /*********************************************************
+    The axis-option minRange is not working quite as expected.
+    The range can get quit larger than minRange because of other options.
+    See https://github.com/highcharts/highcharts/issues/13485
+    Therefore a new tickPositioner-function is used to get
+    better min-range implementation
+    If axis.manRange is set startOnTick and endOnTick is
+    also set = true (unless it was set specific to false)
+    *********************************************************/
+    function axis_tickPositioner(/*min, max*/){
+        var dataRange = this.dataMax - this.dataMin;
+        if (dataRange > this.options.minRange)
+            return this.tickPositions;
+
+        var dataCenter = this.dataMin + dataRange/2,
+            minRange = this.options.minRange,
+            maxValue = dataCenter + minRange/2,
+            minValue = dataCenter - minRange/2,
+            maxTickIndex = this.tickPositions.length,
+            maxTickDist = Infinity,
+            minTickIndex = 0,
+            minTickDist = Infinity;
+
+        $.each(this.tickPositions, function(index, tickValue){
+            var dist;
+            if (tickValue > dataCenter){
+                //Find tickIndex with lowest distance to maxValue
+                dist = Math.abs(tickValue - maxValue);
+                if (dist < maxTickDist){
+                    maxTickDist = dist;
+                    maxTickIndex = index;
+                }
+            }
+            else {
+                dist = Math.abs(tickValue - minValue);
+                if (dist < minTickDist){
+                    minTickDist = dist;
+                    minTickIndex = index;
+                }
+            }
+        });
+
+        return this.tickPositions.slice(minTickIndex, maxTickIndex+1);
+    }
 
 
     /*********************************************************
@@ -1043,6 +1087,17 @@ axis        : Each parameter get own y-axis in own color
                     chartOptions.yAxis[ seriesAxisIndex[index] ] = $.extend(true, chartOptions.yAxis[seriesAxisIndex[index]], options);
             });
 
+            //Update all yAxis with default options
+            $.each(chartOptions.yAxis, function(index, options){
+                //Set the options needed to get a better minRange.
+                //See function axis_tickPositioner at the top
+                if (options.minRange){
+                    options.startOnTick = options.startOnTick === undefined ? true : options.startOnTick;
+                    options.endOnTick   = options.endOnTick   === undefined ? true : options.endOnTick;
+                    options.tickPositioner = options.tickPositioner || axis_tickPositioner;
+                }
+            });
+
             //Name of series
             chartOptions.series = [];
             if (this.multiParameter || this.singleSingle)
@@ -1121,7 +1176,7 @@ axis        : Each parameter get own y-axis in own color
     }
     ****************************************************************************/
     function TimeSeries(options){
-		BaseTimeSeries.call(this, options);
+        BaseTimeSeries.call(this, options);
     }
 
     TimeSeries.prototype = Object.create(BaseTimeSeries.prototype);
@@ -1149,7 +1204,7 @@ axis        : Each parameter get own y-axis in own color
     }
     ****************************************************************************/
     function HistoricalTimeSeries(options){
-		BaseTimeSeries.call(this, options);
+        BaseTimeSeries.call(this, options);
         this.chartConstructor = nsHC.stockChart;
     }
 
