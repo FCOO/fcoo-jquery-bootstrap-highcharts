@@ -316,7 +316,23 @@ axis        : Each parameter get own y-axis in own color
         series      : SERIESOPTIONS or []SERIESOPTIONS or [](SERIESOPTIONS or []SERIESOPTIONS)
         chartOptions: JSON
         finally     : function(timeSeries) (optional) Called when all data are loaded.
+
+        zeroLine    : BOOLEAN (true). If true a thin horizontal line is drawn on y-axis value 0 in the same color as the series
+        verticalLines: VERTICALLINE or []VERTICALLINE
     }
+
+    VERTICALLINE = options for a vertical line at value (Number or MOMENT)
+    VERTICALLINE = {
+        value: NUMBER or MOMENT
+        width: 1,
+	    color: 'black',
+	    dashStyle: 'solid',
+	    label: {
+	        text : STRING
+            align: STRING
+        }
+    }
+
     ****************************************************************************/
     function BaseTimeSeries(options){
         var _this = this;
@@ -324,7 +340,12 @@ axis        : Each parameter get own y-axis in own color
         this.chartOptions = options.chartOptions || {};
 
         this.chartConstructor = nsHC.chart;
-        this.options = options;
+        this.options = $.extend(true, {}, {
+            //Default options
+            zeroLine: true
+
+        },
+        options);
         this.finally = options.finally || function(){};
 
         this.parameter = $.isArray(options.parameter) ? options.parameter : [options.parameter];
@@ -402,7 +423,7 @@ axis        : Each parameter get own y-axis in own color
                 color     : index,
                 deltaColor: 0,
                 marker    : true,
-                lineWidth : 1,
+                lineWidth : 2,
                 dashStyle : 'Solid',
                 noTooltip : false
             }, options);
@@ -529,6 +550,23 @@ axis        : Each parameter get own y-axis in own color
             this.set('xAxis.crosshair', true);
             this.set('xAxis.type', 'datetime');
 
+            //Set vertical line
+            var plotLines = [],
+                verLineList = this.options.verticalLines || [];
+            $.each( $.isArray(verLineList) ? verLineList : [verLineList], function(index, lineOptions){
+                lineOptions = $.extend(true, {}, {
+                    width    : 1,
+	                color    : 'black',
+	                dashStyle: 'solid'
+                }, lineOptions);
+
+                lineOptions.value = moment.isMoment(lineOptions.value) ? lineOptions.value.valueOf() : lineOptions.value;
+                plotLines.push( lineOptions );
+            });
+            this.set('xAxis.plotLines', plotLines);
+
+
+
             //Default time-step = one hour
             this.set('plotOptions.series.pointInterval', 60*60*1000);
 
@@ -580,14 +618,27 @@ axis        : Each parameter get own y-axis in own color
 
             //y-axis - if one parameter => no text on axis
             chartOptions.yAxis = [];
-            var seriesAxisIndex = [];
+            var seriesAxisIndex = [], nextAxis;
+
             if (this.multiLocation || this.singleSingle){
-                chartOptions.yAxis.push( {
+                nextAxis = {
                     crosshair   : true,
                     opposite    : false,
                     labels      : this.parameter[0].hcOptions_axis_labels(),
                     title       : {enabled: false}
-                });
+                };
+
+                if (this.parameter[0].negative && this.options.zeroLine)
+                    nextAxis.plotLinies = [{
+                        color: 'black',
+                        width: 2,
+                        value: 0
+                    }];
+                if (!this.parameter[0].negative)
+                    nextAxis.min = 0;
+
+                chartOptions.yAxis.push( nextAxis );
+
                 //All series use the same axis
                 seriesAxisIndex = Array(this.location.length).fill(0);
             }
@@ -605,21 +656,31 @@ axis        : Each parameter get own y-axis in own color
 
                 $.each(this.parameter, function(index, parameter){
                     var color = _this.series[index].getChartOptions().color,
-                        style = {color: color},
-                        nextAxis = {
-                            lineColor: color,
-                            lineWidth: 1,
+                        style = {color: color};
 
-                            opposite: index > leftAxisIndex,
-                            title: {
-                                text: parameter.decodeGetName(true, true, _this.z),
-                                style: style
-                            },
-                            labels: {
-                                formatter: parameter.hcOptions_axis_labels_formatter(),
-                                style: style
-                            }
-                        };
+                    nextAxis = {
+                        lineColor: color,
+                        lineWidth: 1,
+
+                        opposite: index > leftAxisIndex,
+                        title: {
+                            text: parameter.decodeGetName(true, true, _this.z),
+                            style: style
+                        },
+                        labels: {
+                            formatter: parameter.hcOptions_axis_labels_formatter(),
+                            style: style
+                        }
+                    };
+
+                    if (_this.options.zeroLine && parameter.negative)
+                        nextAxis.plotLines = [{
+                            color: color,
+                            width: 2,
+                            value: 0
+                        }];
+                    if (!parameter.negative)
+                        nextAxis.min = 0;
 
                     //Replace the index-number in yAxis with the axis-options
                     chartOptions.yAxis[ seriesAxisIndex[index] ] = nextAxis;
@@ -678,6 +739,7 @@ axis        : Each parameter get own y-axis in own color
             });
 
             //Create the chart
+console.log(this.chartOptions);
             var chart = this.chart = this.chartConstructor(this.options.container, this.chartOptions);
             chart.fcooTimeSeries = this;
 
