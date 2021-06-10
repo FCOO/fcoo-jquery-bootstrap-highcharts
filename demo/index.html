@@ -20,6 +20,7 @@
 	<script src="../src/fcoo-jquery-bootstrap-highcharts.js"></script>
 	<script src="../src/time-series.js"></script>
 	<script>
+
         //window.fcoo.DEMO_VERSION = true;
 
         window.bsIsTouch = false;
@@ -43,7 +44,7 @@
                 list = [{
                     start   : startDate, 
                     interval: interval,
-                    data    : [.43934, .52503, .57177, .69658, .97031, 1.19931, 1.37133, 1.54175]
+                    data    : [0, .43934, .52503, .57177, .69658, .97031, {y:1.19931,  marker: {symbol: 'url(https://www.highcharts.com/samples/graphics/sun.png)'}}, 1.37133, 1.54175]
                 },
                 {
                     start   : startDate, 
@@ -80,10 +81,16 @@
                 }];
 
 
-            var test = [[s+0*i, 249.16], /*[s+1*i, 240.64], [s+2*i, 297.42], [s+3*i, 298.51], */[s+4*i, 324.90], [s+5*i, 302.82], [s+6*i, 381.21], [s+7*i, 404.34]],
+            var test = [[s+0*i, 249.16], /*[s+1*i, 240.64], [s+2*i, 297.42], [s+3*i, 298.51], */[s+4*i, 324.90], [s+5*i, 302.82], [s+6*i, 381.21], [s+7*i, {y:404.34, d:359}]],
                 dataList = [],
                 nextStart = moment().year(1999);
-    
+
+            $.each(test, function(index, ts_data){
+                if (typeof ts_data[1] == 'number')
+                    test[index] = [ts_data[0], [ts_data[1], ts_data[1] % 360]];
+            });
+
+
             $.each([3,1,2], function(dymmy, listIndex){
                 var data = [...list[listIndex].data]; 
                 dataList.push({
@@ -105,46 +112,71 @@
 
             
             //*************************************************************
-            function createTimeSerieChart(parameter, location, unit, factor, $container){
+            function dataWithDirection(options){
+                var result = {
+                        start   : options.start, 
+                        interval: options.interval,
+                        data    : []
+                    };
+                $.each(options.data, function(index, value){
+                    result.data.push([value, index*30 % 360]);
+//HER                    result.data.push({y:value, d:index*30 % 360});
+                });
+                return result;
+            }
+
+            //*************************************************************
+            function createTimeSerieChart(parameter, location, unit, $container, options = {}){
                 if (mainChart) mainChart.destroy(); 
+
+                var firstParameterIsVector = fcoo.parameter.getParameter(parameter[0]).type == 'vector';
 
                 var series = [];
                 for (var i=0; i<Math.max(parameter.length || 1, location.length || 1); i++){
-                    series.push({data: $.extend(true, {}, list[i]) } );
+                    var nextSeries = {
+                        data: $.extend(true, {}, list[i]) 
+                    };
+                    if (!i && firstParameterIsVector){
+                        nextSeries.data = dataWithDirection(nextSeries.data);
+                        nextSeries.directionArrow = true;
+                    }
+
+                    series.push(nextSeries);
                 }
 
                 var axis = [];
                 if (parameter[0] == 'sea_surface_height_above_mean_sea_level')
                     axis.push({minRange: .80});
-                mainChart = fcoo.hc.timeSeries({
-                    container: $container || $mainContainer,
-                    parameter: parameter,
-                    unit     : unit,
-                    location : location,
-                    series   : series,
-                    axis: axis,
-                    chartOptions: { 
-                        chart: {
-                            scrollablePlotArea: {
-                                minWidth       : 1000,
-                                scrollPositionX: 1
-                            }
+
+                mainChart = fcoo.hc.timeSeries($.extend(true, {
+                        container: $container || $mainContainer,
+                        parameter: parameter,
+                        unit     : unit,
+                        location : location,
+                        series   : series,
+                        axis: axis,
+                        chartOptions: { 
+                            chart: {
+                                scrollablePlotArea: {
+                                    minWidth       : 1000,
+                                    scrollPositionX: 1
+                               }
+                            },
+                            container: { css: {height:'50%'} } 
                         },
-                        container: { css: {height:'50%'} } 
-                        
-                    },
-                    verticalLines: {
-                        value: Date.UTC(1999,4,31), 
-                        color: 'orange',
-                        width: 5
-                    }
-                });
+                        verticalLines: {
+                            value: Date.UTC(1999,4,31), 
+                            color: 'orange',
+                            width: 5
+                        }
+                    }, options)
+                );
             }
             
-            function addButton2(text, parameter, location, unit){
+            function addButton2(text, parameter, location, unit, options){
                 $('<button style="width:100%">'+text+'</button>')
                     .on('click', function(){
-                        createTimeSerieChart(parameter, location, unit);
+                        createTimeSerieChart(parameter, location, unit, null, options);
                     })
                     .appendTo(main.leftMenu.$menu);
             }
@@ -158,7 +190,7 @@
                             //megaWidth: true,
                             scroll: false,                                
                             content: function($body){
-                                createTimeSerieChart(parameter, location, unit, null, $body);
+                                createTimeSerieChart(parameter, location, unit, $body);
                             },
                             show: true
                         });                                
@@ -175,35 +207,39 @@
                         mainChart = fcoo.hc.timeSeries({
                             container: $mainContainer,
                             //parameter: 'sea_surface_height_above_mean_sea_level',
-                            parameter: ['sea_water_velocity', 'sea_surface_height_above_mean_sea_level'],
+                            //parameter: ['sea_water_velocity'],
+                            parameter: ['sea_surface_height_above_mean_sea_level', 'sea_water_velocity'],
                             location : {da: 'Lokationen', en:'The Location'},
                             tooltip: {backgroundColor: 'green'},
                             series   : [{
                                     color: 4, 
                                     //data: test,
-                                    //maxGap: 12 * 60
                                     data: list[1],
+                                    
+                                    //maxGap: 12 * 60,
                                     markerSize: 2,
                                     visible: false,
                                 }, 
-
                                 [{
-                                    _color     :  0, 
-                                    marker: false,
-                                    noTooltip: true,
-                                    data: dataList[0]
+                                    color :  0, 
+                                    marker: true,
+                                    directionArrow: true,
+                                    noTooltip: false, //true,
+                                    data: test, //dataList[0]
                                 },{   
                                     deltaColor: +2, 
-                                    tooltipPrefix: {da:' (DA) ', en:' (EN) '},                         
+                                    //tooltipPrefix: {da:' (DA) ', en:' (EN) '},                         
                                     noTooltip: false,
                                     marker: false, 
+                                    directionArrow: true,
                                     dashStyle:'DashDot', 
-                                    data: dataList[1]
+                                    data: dataWithDirection(dataList[1])
                                 },{   
                                     deltaColor: -2, 
                                     tooltipPrefix: '',
                                     noTooltip: false,
                                     marker: false, 
+                                    directionArrow: false,
                                     dashStyle: 'Dash',
                                     data: dataList[2]
                                 }]
@@ -220,7 +256,7 @@
             }
 
             addButton2('1xP (SeaLevel)  + 1xL (no name)', ['sea_surface_height_above_mean_sea_level'], false);                        
-            addButton2('1xP (SeaLevel [cm])  + 1xL', ['sea_surface_height_above_mean_sea_level'], {da: 'Lokationen', en:'The Location'}, 'cm', 100 );                        
+            addButton2('1xP (SeaLevel [cm])  + 1xL', ['sea_surface_height_above_mean_sea_level'], {da: 'Lokationen', en:'The Location'}, 'cm', {noZoom: true, noTitle: true, noSubTitle:true, alwaysShowParameter: true, noMenu: true} );                        
             addButton2('1xP + 1xL', ['sea_water_velocity'], {da: 'Lokationen', en:'The Location'}/*, 'km/t'*/ );                        
             addButton2('1xP + 3xL', ['sea_water_salinity'], [{da: 'Lokationen', en:'The Location'}, {da: 'Lokation 2', en:'Location 2'}, {da: 'Lokation 3 med et langt navn', en:'Location 3 with a long name'}] );
             addButton2('3xP + 1xL', ['sea_water_velocity', 'sea_water_salinity', 'speed_of_sound_in_sea_water'], {da: 'Lokationen', en:'The Location'});                        
@@ -257,7 +293,7 @@
                     container: $mainContainer,
                     parameter: "air_temperature",
                     location: "Vik i Sogn, Norge",
-                    series  : {fileName: 'data/large-dataset.json'},
+                    series  : {fileName: 'data/large-dataset.json', convert:testConvert2},
         
                     chartOptions: { container: { css: {height:'50%'} } }
                 });
@@ -270,7 +306,7 @@
                     parameter: "air_temperature",
                     location: ["Vik i Sogn, Norge", "Et andet sted", "Et 3. sted"],
                     styles  : [{color:8, dashStyle:'Dash', lineWidth:4}],
-                    series  : [{fileName: 'data/large-dataset.json'}, {fileName: 'data/large-dataset.json', convert:testConvert2}, {fileName: 'data/large-dataset.json', convert:testConvert2}],
+                    series  : [{fileName: 'data/large-dataset.json', convert:testConvert2}, {fileName: 'data/large-dataset.json'}, {fileName: 'data/large-dataset.json', convert:testConvert2}],
         
                     chartOptions: { container: { css: {height:'50%'} } }
                 });
