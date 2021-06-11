@@ -21,7 +21,7 @@
 	<script src="../src/time-series.js"></script>
 	<script>
 
-        //window.fcoo.DEMO_VERSION = true;
+        window.fcoo.DEMO_VERSION = true;
 
         window.bsIsTouch = false;
         window.bsIsTouch = (window.location.search =='?touch');
@@ -259,7 +259,9 @@
             addButton2('1xP (SeaLevel [cm])  + 1xL', ['sea_surface_height_above_mean_sea_level'], {da: 'Lokationen', en:'The Location'}, 'cm', {noZoom: true, noTitle: true, noSubTitle:true, alwaysShowParameter: true, noMenu: true} );                        
             addButton2('1xP + 1xL', ['sea_water_velocity'], {da: 'Lokationen', en:'The Location'}/*, 'km/t'*/ );                        
             addButton2('1xP + 3xL', ['sea_water_salinity'], [{da: 'Lokationen', en:'The Location'}, {da: 'Lokation 2', en:'Location 2'}, {da: 'Lokation 3 med et langt navn', en:'Location 3 with a long name'}] );
-            addButton2('3xP + 1xL', ['sea_water_velocity', 'sea_water_salinity', 'speed_of_sound_in_sea_water'], {da: 'Lokationen', en:'The Location'});                        
+
+            addButton2('3xP + 1xL', ['sea_water_velocity', 'sea_water_salinity', 'speed_of_sound_in_sea_water'], {da: 'Lokationen', en:'The Location'}, 'kn');                        
+
             addButton2('9xP + 1xL', ['sea_water_velocity', 'sea_water_salinity', 'speed_of_sound_in_sea_water', 'air_temperature', 'air_pressure_at_mean_sea_level', 'sea_water_velocity', 'sea_water_salinity', 'speed_of_sound_in_sea_water', 'air_temperature'], {da: 'Lokationen', en:'The Location'});
 
             addButton3('Modal 1xP (SeaLevel)  + 1xL (no name)', ['sea_surface_height_above_mean_sea_level'], false);                        

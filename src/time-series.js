@@ -525,10 +525,17 @@ axis        : Each parameter get own y-axis in own color
             if (unitList.length > index){
                 //Clone the parameter and set it to use the new unit
                 var unit = nsParameter.getUnit(unitList[index]),
-                    decimals = Math.max(0, param.decimals + Math.round(Math.log10(unit.SI_factor/param.unit.SI_factor)));
-                _this.parameter[index] = $.extend(true, {}, param);
-                _this.parameter[index].decimals = decimals;
-                _this.parameter[index].unit = unit;
+                    decimals = Math.max(0, param.decimals + Math.round(Math.log10(unit.SI_factor/param.unit.SI_factor))),
+                    clonedParam =  _this.parameter[index] = $.extend(true, {}, param);
+                clonedParam.decimals = decimals;
+                clonedParam.unit = unit;
+
+                //If the parameter is a vector => clone the speed-parameter with new unit
+                if (clonedParam.type == 'vector'){
+                    var speedParam = clonedParam.speed_direction[0] = $.extend(true, {}, clonedParam.speed_direction[0]);
+                    speedParam.decimals = decimals;
+                    speedParam.unit = unit;
+                }
             }
         });
 
