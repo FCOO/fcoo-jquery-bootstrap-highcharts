@@ -21,7 +21,7 @@
 	<script src="../src/time-series.js"></script>
 	<script>
 
-        window.fcoo.DEMO_VERSION = true;
+        //window.fcoo.DEMO_VERSION = true;
 
         window.bsIsTouch = false;
         window.bsIsTouch = (window.location.search =='?touch');
@@ -223,7 +223,7 @@
                                 [{
                                     color :  0, 
                                     marker: true,
-                                    directionArrow: true,
+                                    directionArrow: 'fal-arrow-alt-up',//true,
                                     noTooltip: false, //true,
                                     data: test, //dataList[0]
                                 },{   
@@ -231,7 +231,7 @@
                                     //tooltipPrefix: {da:' (DA) ', en:' (EN) '},                         
                                     noTooltip: false,
                                     marker: false, 
-                                    directionArrow: true,
+                                    directionArrow: 'fal-arrow-alt-up', //true,
                                     dashStyle:'DashDot', 
                                     data: dataWithDirection(dataList[1])
                                 },{   

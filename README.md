@@ -17,6 +17,26 @@ http://FCOO.github.io/fcoo-jquery-bootstrap-highcharts/demo/
 ## Usage
 See documentation in the src-files
 
+
+## Direction arrows
+
+| Id |  |
+| :--: | :--: |
+| fal-arrow-alt-up | <img src="/arrows/fal-arrow-alt-up.png" style="height:32px"> |
+| fal-arrow-up | <img src="/arrows/fal-arrow-up.png" style="height:32px"> |
+| fal-long-arrow-alt-up | <img src="/arrows/fal-long-arrow-alt-up.png" style="height:32px"> |
+| fal-long-arrow-up | <img src="/arrows/fal-long-arrow-up.png" style="height:32px"> |
+| far-arrow-alt-up | <img src="/arrows/far-arrow-alt-up.png" style="height:32px"> |
+| far-arrow-up | <img src="/arrows/far-arrow-up.png" style="height:32px"> |
+| far-long-arrow-alt-up | <img src="/arrows/far-long-arrow-alt-up.png" style="height:32px"> |
+| far-long-arrow-up | <img src="/arrows/far-long-arrow-up.png" style="height:32px"> |
+| fas-arrow-alt-up | <img src="/arrows/fas-arrow-alt-up.png" style="height:32px"> |
+| fas-arrow-up | <img src="/arrows/fas-arrow-up.png" style="height:32px"> |
+| fas-long-arrow-alt-up | <img src="/arrows/fas-long-arrow-alt-up.png" style="height:32px"> |
+| fas-long-arrow-up | <img src="/arrows/fas-long-arrow-up.png" style="height:32px"> |
+
+
+
 <!--
 ```var myFcooJqueryBootstrapHighcharts = new FcooJqueryBootstrapHighcharts( options );```
 
