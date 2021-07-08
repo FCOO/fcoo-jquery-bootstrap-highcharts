@@ -243,15 +243,12 @@ axis        : Each parameter get own y-axis in own color
 
             gapUnit      : Set to 'value' if maxGap is given
 
-            directionArrow: {
-                dir   : STRING - Directory for the images. Defalut = 'images/'
-                src   : STRING - The file name of the image with the arrow pointing up. Default = MANGLER. Possible values from images/ = (fal- | fas- | far- )[long-]arrow-[alt-]up.svg
-                width : NUMBER - Width of the image when displayed. Default = 16
-                height: NUMBER - Width of the image when displayed. Default = 16
-            }
             directionArrow: true        //Use default setting
             directionArrow: false       //Do not display direction arrows/images
+            directionArrow: STRING      //id from directionArrows of arrow to use
 
+            showLegendArrow: BOOLEAN (false).   If true and directionArrow the direction arrow used for a series is shown in the legend.
+                                                It is the directionArrow and showLegendArrow of the first sub-series that desides if and what to show in the legend
 
         Special options:
             color       : NUMBER = index in default color-list (Blue, Red, Green,...)
@@ -760,32 +757,6 @@ axis        : Each parameter get own y-axis in own color
                     verticalAlign: 'top',
                 });
 
-chartOptions.chart = {
-    events: {
-        render: function(){
-            console.log('render');
-            $.each(_this.series, function(index, singleTimeSeries){
-
-if (singleTimeSeries.series && singleTimeSeries.series.legendSymbol && singleTimeSeries.series.legendSymbol.element)
-    singleTimeSeries.series.legendSymbol.element.style.display = 'none';
-
-//HER                if (/*hideLegendSymbol && */series.legendSymbol){
-//HER                    series.legendSymbol.element.style.display = 'none';
-//HER                }
-            });
-        }
-    }
-}
-
-//MANGLER sæt event 'rendere' eller tilsvarende der gøt:
-    var hideLegendSymbol = true;
-    $.each(this.series, function(index, series){
-        if (hideLegendSymbol && series.legendSymbol){
-            series.legendSymbol.element.style.display = 'none';
-        }
-    });
-
-
             //Zoomable
             if (!this.options.noZoom)
                 this.set('chart.zoomType', 'x');
@@ -973,8 +944,6 @@ if (singleTimeSeries.series && singleTimeSeries.series.legendSymbol && singleTim
             $.each(chartOptions.series, function(index, seriesOptions){
                 chartOptions.series[index] = $.extend(true, seriesOptions, _this.series[index].getChartOptions());
                 chartOptions.series[index].id =  'fcoo_series_' + index;
-
-                console.log( chartOptions.series[index].legend );
             });
 
             //Add sub series
@@ -988,7 +957,37 @@ if (singleTimeSeries.series && singleTimeSeries.series.legendSymbol && singleTim
                 chartOptions.series.push(seriesOptions);
             });
 
-            //Create the chart
+            /*
+            If the series has direction arrows AND showLegendArrow = false
+            the image of the arrow in the legend are hidden.
+            The solution is not that elegant, but there was no (known) options
+            in Highchart to control this nor any (known) css-classes to alter
+            */
+            var anySeriesNeedToHideArrow = false;
+            $.each(this.series, function(index, singleTimeSeries){
+                if (singleTimeSeries.options.directionArrow && !singleTimeSeries.options.showLegendArrow){
+                    anySeriesNeedToHideArrow = true;
+                    singleTimeSeries.options.hideLegendArrow = true;
+                }
+            });
+
+            if (anySeriesNeedToHideArrow)
+                this.set('chart.events.render', function(){
+                    $.each(_this.series, function(index, singleTimeSeries){
+                        if (
+                            singleTimeSeries.options.hideLegendArrow &&
+                            singleTimeSeries.series &&
+                            singleTimeSeries.series.legendSymbol &&
+                            singleTimeSeries.series.legendSymbol.element
+                        )
+                            singleTimeSeries.series.legendSymbol.element.style.display = 'none';
+                    });
+                });
+
+
+            /****************************************
+            Create the chart
+            ****************************************/
             var chart = this.chart = this.chartConstructor(this.options.container, this.chartOptions);
             chart.fcooTimeSeries = this;
 

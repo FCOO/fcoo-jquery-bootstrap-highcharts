@@ -537,6 +537,28 @@ axis        : Each parameter get own y-axis in own color
     //*/
 
     /*********************************************************
+    DIRECTION ARROWS
+    There are 12 different type of arrows to be used.
+    They are id'ed by the cooresponding filename in src/images
+    The width, height are taken directly from the svg-files
+    They are used to scale the selected arrow-images
+    *********************************************************/
+    var directionArrows = {
+            "fal-arrow-alt-up"      : {fileName:"fal-arrow-alt-up.svg",         width: 448, height: 512},
+            "fal-arrow-up"          : {fileName:"fal-arrow-up.svg",             width: 448, height: 512},
+            "fal-long-arrow-alt-up" : {fileName:"fal-long-arrow-alt-up.svg",    width: 256, height: 512},
+            "fal-long-arrow-up"     : {fileName:"fal-long-arrow-up.svg",        width: 256, height: 512},
+            "far-arrow-alt-up"      : {fileName:"far-arrow-alt-up.svg",         width: 448, height: 512},
+            "far-arrow-up"          : {fileName:"far-arrow-up.svg",             width: 448, height: 512},
+            "far-long-arrow-alt-up" : {fileName:"far-long-arrow-alt-up.svg",    width: 256, height: 512},
+            "far-long-arrow-up"     : {fileName:"far-long-arrow-up.svg",        width: 320, height: 512},
+            "fas-arrow-alt-up"      : {fileName:"fas-arrow-alt-up.svg",         width: 448, height: 512},
+            "fas-arrow-up"          : {fileName:"fas-arrow-up.svg",             width: 448, height: 512},
+            "fas-long-arrow-alt-up" : {fileName:"fas-long-arrow-alt-up.svg",    width: 256, height: 512},
+            "fas-long-arrow-up"     : {fileName:"fas-long-arrow-up.svg",        width: 320, height: 512}
+        };
+
+    /*********************************************************
     The axis-option minRange is not working quite as expected.
     The range can get quit larger than minRange because of other options.
     See https://github.com/highcharts/highcharts/issues/13485
@@ -681,15 +703,12 @@ axis        : Each parameter get own y-axis in own color
 
             gapUnit      : Set to 'value' if maxGap is given
 
-            directionArrow: {
-                dir   : STRING - Directory for the images. Defalut = 'images/'
-                src   : STRING - The file name of the image with the arrow pointing up. Default = MANGLER. Possible values from images/ = (fal- | fas- | far- )[long-]arrow-[alt-]up.svg
-                width : NUMBER - Width of the image when displayed. Default = 16
-                height: NUMBER - Width of the image when displayed. Default = 16
-            }
             directionArrow: true        //Use default setting
             directionArrow: false       //Do not display direction arrows/images
+            directionArrow: STRING      //id from directionArrows of arrow to use
 
+            showLegendArrow: BOOLEAN (false).   If true and directionArrow the direction arrow used for a series is shown in the legend.
+                                                It is the directionArrow and showLegendArrow of the first sub-series that desides if and what to show in the legend
 
         Special options:
             color       : NUMBER = index in default color-list (Blue, Red, Green,...)
@@ -742,12 +761,31 @@ axis        : Each parameter get own y-axis in own color
 
         //Set options for src of small images (with arrows) used to display direction of a vector-parameter
         if (this.options.directionArrow){
-            this.options.directionArrow = this.options.directionArrow === true ? {} : this.options.directionArrow;
-            this.options.directionArrow = $.extend({
-                dir   : 'images/',
-                src   : 'fas-arrow-up.svg',
-                width : 16
-            }, this.options.directionArrow );
+            var arrowId  = 'far-long-arrow-alt-up', //'fas-arrow-up', //'fal-long-arrow-up',
+                dirArrow = directionArrows[arrowId],
+                dim      = 16;
+
+            //Find the selected record in directionArrows
+            if (this.options.directionArrow === true)
+                /* OK => Use default */;
+            else
+                if (typeof this.options.directionArrow == 'string')
+                    arrowId = this.options.directionArrow;
+                else {
+                    arrowId = this.options.directionArrow.id || this.options.directionArrow.fileName;
+                    dim     = this.options.directionArrow.dim || 16;
+                }
+
+            dirArrow = directionArrows[arrowId] || dirArrow;
+
+            //Calc relative widt and height
+            var factor = dim / Math.max(dirArrow.width, dirArrow.height);
+
+            this.options.directionMarker = {
+                symbol: 'url(images/' + dirArrow.fileName + ')',
+                width : factor*dirArrow.width,
+                height: factor*dirArrow.height
+            };
         }
     };
 
@@ -778,11 +816,8 @@ axis        : Each parameter get own y-axis in own color
                     symbol : null
                 };
             if (markerEnabled){
-                if (o.directionArrow){
-                    marker.symbol = 'url(' + o.directionArrow.dir + o.directionArrow.src + ')';
-                    marker.width  = o.directionArrow.width;
-                    marker.height = o.directionArrow.height || o.directionArrow.width;
-                }
+                if (o.directionArrow)
+                    $.extend(marker, o.directionMarker);
                 else {
                     var symbolList = Highcharts.getOptions().symbols;
                     marker.symbol = o.marker === true ? symbolList[this.index % symbolList.length] : o.marker;
@@ -1179,7 +1214,7 @@ axis        : Each parameter get own y-axis in own color
                     borderWidth  : 0,
                     enabled      : !this.options.noLegend,
                     margin       : 0,
-                    verticalAlign: 'top'
+                    verticalAlign: 'top',
                 });
 
             //Zoomable
@@ -1382,7 +1417,37 @@ axis        : Each parameter get own y-axis in own color
                 chartOptions.series.push(seriesOptions);
             });
 
-            //Create the chart
+            /*
+            If the series has direction arrows AND showLegendArrow = false
+            the image of the arrow in the legend are hidden.
+            The solution is not that elegant, but there was no (known) options
+            in Highchart to control this nor any (known) css-classes to alter
+            */
+            var anySeriesNeedToHideArrow = false;
+            $.each(this.series, function(index, singleTimeSeries){
+                if (singleTimeSeries.options.directionArrow && !singleTimeSeries.options.showLegendArrow){
+                    anySeriesNeedToHideArrow = true;
+                    singleTimeSeries.options.hideLegendArrow = true;
+                }
+            });
+
+            if (anySeriesNeedToHideArrow)
+                this.set('chart.events.render', function(){
+                    $.each(_this.series, function(index, singleTimeSeries){
+                        if (
+                            singleTimeSeries.options.hideLegendArrow &&
+                            singleTimeSeries.series &&
+                            singleTimeSeries.series.legendSymbol &&
+                            singleTimeSeries.series.legendSymbol.element
+                        )
+                            singleTimeSeries.series.legendSymbol.element.style.display = 'none';
+                    });
+                });
+
+
+            /****************************************
+            Create the chart
+            ****************************************/
             var chart = this.chart = this.chartConstructor(this.options.container, this.chartOptions);
             chart.fcooTimeSeries = this;
 
