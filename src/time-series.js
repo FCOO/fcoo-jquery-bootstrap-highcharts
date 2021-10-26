@@ -28,38 +28,8 @@ axis        : Each parameter get own y-axis in own color
     //Create fcoo-namespace
     var ns = window.fcoo = window.fcoo || {},
         nsParameter = ns.parameter = ns.parameter || {},
+        nsColor = ns.color = ns.color || {},
         nsHC = ns.hc = ns.highcharts = ns.highcharts || {};
-
-    //Linkedin Extended Palette for Screen
-    var linkedinPalette = [
-        //0:Blue    1:Purple    2:Red      3:Orange   4:Cyan     5:Yellow   6:Pink     7:Green    8:Gray
-        ['#CFEDFB', '#EBE4FF', '#FFE0DA', '#FFE7BB', '#D2ECEB', '#FFF2B6', '#FFDFF2', '#E0F4BE', '#E6E9EC'],
-        ['#9BDAF3', '#D8CCF4', '#FAC2BB', '#F8CD94', '#9EDDDD', '#FBE491', '#FFC4E4', '#C7E59A', '#D0D3D6'],
-        ['#68C7EC', '#BFABE6', '#F59890', '#F7B26A', '#69CDCF', '#F7D56B', '#F99ACA', '#AED677', '#B6B9BC'],
-        ['#34B3E4', '#A589D9', '#F16D64', '#F59640', '#35BEC1', '#F3C746', '#F371AF', '#95C753', '#A0A3A6'],
-        ['#00A0DC', '#8C68CB', '#EC4339', '#F47B16', '#00AEB3', '#EFB920', '#ED4795', '#7CB82F', '#86898C'],
-        ['#008CC9', '#7C5BBB', '#DD2E1F', '#EC640C', '#009EA5', '#E6A700', '#E2247F', '#60AA14', '#737679'],
-        ['#0077B5', '#6A4BA7', '#C11F1D', '#CD5308', '#008891', '#CA9400', '#C9186E', '#4E8F13', '#595C5F'],
-        ['#005E93', '#573B93', '#A40F1C', '#AF4104', '#00727D', '#AA7D00', '#B10C5C', '#3B7511', '#434649'],
-        ['#004471', '#452B7F', '#88001A', '#903000', '#005C69', '#8B6700', '#870044', '#295A10', '#303336']
-    ];
-
-    function getColorList(colorGroupIndex){
-        var result = [];
-        //Set color sequence = Blue, Red, Green, Yellow, Gray,  Purple, Pink, Cyan, Orange
-        $.each([0, 2, 7, 5, 8, 1, 6, 4, 3], function(dummy, colorIndex){
-            result.push( linkedinPalette[colorGroupIndex][colorIndex]);
-        });
-        return result;
-    }
-
-    //Default color-group = 4
-    var defaultColorGroup = 4;
-    Highcharts.setOptions({colors: getColorList(defaultColorGroup)});
-
-    function getDeltaColorList(deltaColorGroupIndex){
-        return getColorList(defaultColorGroup + deltaColorGroupIndex);
-    }
 
     /*
     //Fix to allow more than two series linked together being highlighted when hover
@@ -252,7 +222,7 @@ axis        : Each parameter get own y-axis in own color
 
         Special options:
             color       : NUMBER = index in default color-list (Blue, Red, Green,...)
-            deltaColor  : NUMBER is relative to defaultColorGroup (+ = darker - = lighter)
+            deltaColor  : NUMBER is relative to window.fcoo.color.defaultGradient (+ = darker - = lighter)
             marker      : true, STRING, false. true: Next default marker, false: no marker
             markerSize  : NUMBER converts to marker.radius if marker != false
             noTooltip   : BOOLEAN. When true the series do not have a tooltip
@@ -338,8 +308,10 @@ axis        : Each parameter get own y-axis in own color
 
             //Convert color and deltaColor into color (STRING)
             //color     : NUMBER = index in default color-list (Blue, Red, Green,...)
-            //deltaColor: NUMBER is relative to defaultColorGroup (+ = darker - = lighter)
-            o.color = getDeltaColorList(o.deltaColor)[o.color];
+            //deltaColor: NUMBER is relative to window.fcoo.color.defaultGradient (+ = darker - = lighter)
+
+            o.color = nsColor.getDeltaColor(o.color, o.deltaColor, true);
+
 
             //maxGap = Maximum gap between to points in minutes. Is converted to options gapSize
             if (o.maxGap){
