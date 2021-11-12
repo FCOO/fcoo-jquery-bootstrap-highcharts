@@ -145,8 +145,7 @@ Meteorogram: https://www.highcharts.com/demo/combo-meteogram#https://www.yr.no/p
 
             plotOptions: {
                 series: {
-                    //clip: true,    //Disable this option to allow series rendering in the whole plotting area. Note: Clipping should be always enabled when chart.zoomType is set. Defaults to true.
-                                    //NOTE: Must be false for charts created with stockhighcharts to work properly. This is checked in createHighchart
+                    clip: true, //Disable this option to allow series rendering in the whole plotting area. Note: Clipping should be always enabled when chart.zoomType is set. Defaults to true.
 
                     //pointWidth: undefined,    //A pixel value specifying a fixed width for each column or bar point.
                                                 //When set to undefined, the width is calculated from the pointPadding and groupPadding.
@@ -280,11 +279,6 @@ Meteorogram: https://www.highcharts.com/demo/combo-meteogram#https://www.yr.no/p
             chartOptions = $.extend(true, chartOptions, opt);
          });
         chartOptions = adjustOptionsFunc(chartOptions);
-
-
-        //Due to a bug i Highcharts stockchart the series.clip need to be false if the chart has scrollable content
-        if (chartOptions.chart && chartOptions.chart.scrollablePlotArea)
-            chartOptions.plotOptions.series.clip = false;
 
         //Create a inner-container inside container to allow resize-events on the container
         var $innerContainer = $('<div></div>').addClass('chart-inner-container').appendTo(container);
