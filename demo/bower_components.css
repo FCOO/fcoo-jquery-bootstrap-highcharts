@@ -9553,7 +9553,7 @@ div.btn, div.list-group-item {
     -webkit-box-shadow: none !important;
     box-shadow: none !important; }
   .btn.btn-standard.transparent {
-    background: none;
+    background: none !important;
     color: #515961;
     background: rgba(0, 0, 0, 0) linear-gradient(180deg, rgba(255, 255, 255, 0.15), rgba(0, 0, 0, 0)) repeat-x;
     border: 1px solid rgba(0, 0, 0, 0.1);
@@ -9643,7 +9643,6 @@ div.btn, div.list-group-item {
       color: rgba(212, 212, 212, 0.65);
       background: rgba(0, 0, 0, 0) linear-gradient(180deg, rgba(255, 255, 255, 0.15), rgba(0, 0, 0, 0)) repeat-x; }
   .btn.btn-standard.semi-transparent {
-    background: none !important;
     color: #515961;
     background: rgba(248, 249, 250, 0.5); }
     .mouse-hover .hover .btn.btn-standard.semi-transparent:not(:active):not(:disabled):not(.disabled),
@@ -10935,15 +10934,29 @@ body.modal-open .modal {
 .modal-dialog .modal-body-with-vertical-padding {
   padding-top: 0.25rem;
   padding-bottom: 0.25rem; }
+  .modal-dialog .modal-body-with-vertical-padding.modal-body-with-horizontal-padding {
+    padding-left: 0.25rem;
+    padding-right: 0.25rem; }
 
 .modal-dialog.modal-dialog-sm .modal-body-with-vertical-padding {
   padding-top: 0.25rem;
   padding-bottom: 0.25rem; }
+  .modal-dialog.modal-dialog-sm .modal-body-with-vertical-padding.modal-body-with-horizontal-padding {
+    padding-left: 0.25rem;
+    padding-right: 0.25rem; }
 
 .modal-dialog.modal-dialog-xs .modal-body-with-vertical-padding {
   padding-top: 0.1875rem;
   padding-bottom: 0.1875rem; }
+  .modal-dialog.modal-dialog-xs .modal-body-with-vertical-padding.modal-body-with-horizontal-padding {
+    padding-left: 0.1875rem;
+    padding-right: 0.1875rem; }
 
+/*
+@include content-padding-horizontal();
+@include content-padding-horizontal-sm();
+@include content-padding-horizontal-xs();
+*/
 .modal-content .modal-body-fixed.no-vertical-padding,
 .modal-content .modal-body.no-vertical-padding {
   padding-top: 0 !important;
@@ -29634,6 +29647,7 @@ Font-sizes for labels are same siae as header but incl a xxs-size
 CONTENT
 Unifies padding and font-size for content of modal, accordion, popup etc.
 Using same font-size and vertical/horizontal padding as buttons
+NOTE: For sm and xs y-padding = x-padding
 ************************************************************/
 /************************************************************
 MARGIN-BOTTOM
