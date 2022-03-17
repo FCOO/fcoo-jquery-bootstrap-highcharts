@@ -74,14 +74,19 @@ axis        : Each parameter get own y-axis in own color
     See https://github.com/highcharts/highcharts/issues/13485
     Therefore a new tickPositioner-function is used to get
     better min-range implementation
-    If axis.manRange is set startOnTick and endOnTick is
+    If axis.minRange is set startOnTick and endOnTick is
     also set = true (unless it was set specific to false)
+
+    2022-03-17:
+    A new and simpler version is implemented. The old version allowed data
+    outside the chart
     *********************************************************/
     function axis_tickPositioner(/*min, max*/){
         var dataRange = this.dataMax - this.dataMin;
         if (dataRange > this.options.minRange)
             return this.tickPositions;
 
+    /* Previous version
         var dataCenter = this.dataMin + dataRange/2,
             minRange = this.options.minRange,
             maxValue = dataCenter + minRange/2,
@@ -107,6 +112,27 @@ axis        : Each parameter get own y-axis in own color
                     minTickDist = dist;
                     minTickIndex = index;
                 }
+            }
+        });
+        */
+
+        //New version
+        var dataCenter   = this.dataMin + dataRange/2,
+            minRange     = this.options.minRange,
+            maxValue     = dataCenter + minRange/2,
+            minValue     = dataCenter - minRange/2,
+            maxTickIndex = this.tickPositions.length,
+            minTickIndex = 0;
+
+        $.each(this.tickPositions, function(index, tickValue){
+            var dist;
+            if (tickValue > dataCenter){
+                if (maxValue <= tickValue)
+                    maxTickIndex = index;
+            }
+            else {
+                if (minValue >= tickValue)
+                    minTickIndex = index;
             }
         });
 
@@ -701,7 +727,7 @@ axis        : Each parameter get own y-axis in own color
         createChart: function(){
             var _this = this,
                 chartOptions = this.chartOptions;
-console.log(this.options);
+
             //Title
             if (this.options.noTitle)
                 this.set('title.text', '');
@@ -885,6 +911,7 @@ console.log(this.options);
                 if (index < chartOptions.yAxis.length)
                     chartOptions.yAxis[ seriesAxisIndex[index] ] = $.extend(true, chartOptions.yAxis[seriesAxisIndex[index]], options);
             });
+
 
             //Update all yAxis with default options
             $.each(chartOptions.yAxis, function(index, options){
