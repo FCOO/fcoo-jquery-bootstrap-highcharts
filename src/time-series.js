@@ -701,7 +701,7 @@ axis        : Each parameter get own y-axis in own color
         createChart: function(){
             var _this = this,
                 chartOptions = this.chartOptions;
-
+console.log(this.options);
             //Title
             if (this.options.noTitle)
                 this.set('title.text', '');
@@ -858,6 +858,8 @@ axis        : Each parameter get own y-axis in own color
                             text: parameter.decodeGetName(true, true, _this.z),
                             style: style
                         },
+                        showEmpty: false,   //=> Remove both axis and title when serie is unselected
+
                         labels: {
                             formatter: parameter.hcOptions_axis_labels_formatter(),
                             style: style
