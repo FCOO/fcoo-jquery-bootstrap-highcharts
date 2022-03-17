@@ -125,7 +125,6 @@ axis        : Each parameter get own y-axis in own color
             minTickIndex = 0;
 
         $.each(this.tickPositions, function(index, tickValue){
-            var dist;
             if (tickValue > dataCenter){
                 if (maxValue <= tickValue)
                     maxTickIndex = index;
