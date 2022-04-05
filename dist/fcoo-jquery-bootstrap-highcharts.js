@@ -651,13 +651,13 @@ axis        : Each parameter get own y-axis in own color
 
         showMarker: function(){
             if (this.graphic)
-                this.graphic.attr({visibility: 'visible'});
+                this.graphic.attr({display: 'block'});
             return this;
         },
 
         hideMarker: function(){
             if (this.graphic)
-                this.graphic.attr({visibility: 'hidden'});
+                this.graphic.attr({display: 'none'});
             return this;
         }
     });
@@ -665,22 +665,21 @@ axis        : Each parameter get own y-axis in own color
     //Rotate all marker in all charts when they load or reset
     Highcharts.addEvent(Highcharts.Chart, 'render', function(event){
         $.each(event.target.series, function(seriesIndex, series){
-            if (series.userOptions.directionArrow){
+            if (series.visible && series.userOptions.directionArrow){
                 var o = series.options,
                     markerDim  = Math.max(o.directionMarker.width, o.directionMarker.height),
-                    points     = series.points,
+                    xAxisWidth = series.xAxis.width,
                     lastPlotX  = -10000; //lastPlotX = plotX of last visible marker. -10000 => First point allways get visible maker
 
                 if (o.showAllArrows)
-                    $.each(series.data, function(pointIndex, point){
+                    $.each(series.points, function(pointIndex, point){
                         point.showMarker();
                         point.rotateMarker(point.direction);
                     });
                 else
-                    $.each(series.data, function(pointIndex, point){
-                        var hcPoint = points[pointIndex],
-                            plotX   = hcPoint.plotX;
-                        if ((plotX - lastPlotX) > markerDim){
+                    $.each(series.points, function(pointIndex, point){
+                        var plotX   = point.plotX;
+                        if ((plotX > 0) && (plotX < xAxisWidth) && (plotX - lastPlotX) > markerDim){
                             point.rotateMarker(point.direction);
                             point.showMarker();
                             lastPlotX = plotX;
