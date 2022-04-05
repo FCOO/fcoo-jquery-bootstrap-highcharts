@@ -625,36 +625,73 @@ axis        : Each parameter get own y-axis in own color
 
 
     /*********************************************************
-    Extend Point with method to rotate its marker symbol
+    Extend Point with method to rotate, show and hide its marker symbol
     *********************************************************/
-    Highcharts.Point.prototype.rotateMarker = function(angle){
-        if (!this.graphic || this.isRotated || (angle == undefined))
-            return;
+    $.extend(Highcharts.Point.prototype, {
+        rotateMarker: function(angle){
+            if (!this.graphic || this.isRotated || (angle == undefined))
+                return;
 
-        var rad = angle * Math.PI / 180,
-            sin = Math.sin(rad),
-            cos = Math.cos(rad),
-            centerX = this.graphic.attr('imgwidth') / 2,
-            centerY = this.graphic.attr('imgheight') / 2,
-            newCenterX = centerX * cos - centerY * sin,
-            newCenterY = centerX * sin + centerY * cos;
+            var rad = angle * Math.PI / 180,
+                sin = Math.sin(rad),
+                cos = Math.cos(rad),
+                centerX = this.graphic.attr('imgwidth') / 2,
+                centerY = this.graphic.attr('imgheight') / 2,
+                newCenterX = centerX * cos - centerY * sin,
+                newCenterY = centerX * sin + centerY * cos;
 
-        this.graphic.attr({rotation: angle});
-        this.graphic.translate(-newCenterX, -newCenterY);
+            this.graphic.attr({rotation: angle});
 
-        this.isRotated = true;
+            this.graphic.translate(-newCenterX, -newCenterY);
 
-        return this;
-    };
+            this.isRotated = true;
+
+            return this;
+        },
+
+        showMarker: function(){
+            if (this.graphic)
+                this.graphic.attr({visibility: 'visible'});
+            return this;
+        },
+
+        hideMarker: function(){
+            if (this.graphic)
+                this.graphic.attr({visibility: 'hidden'});
+            return this;
+        }
+    });
 
     //Rotate all marker in all charts when they load or reset
     Highcharts.addEvent(Highcharts.Chart, 'render', function(event){
         $.each(event.target.series, function(seriesIndex, series){
-            $.each(series.data, function(pointIndex, point){
-                point.rotateMarker(point.direction);
-            });
-        });
+            if (series.userOptions.directionArrow){
+                var o = series.options,
+                    markerDim  = Math.max(o.directionMarker.width, o.directionMarker.height),
+                    points     = series.points,
+                    lastPlotX  = -10000; //lastPlotX = plotX of last visible marker. -10000 => First point allways get visible maker
 
+                if (o.showAllArrows)
+                    $.each(series.data, function(pointIndex, point){
+                        point.showMarker();
+                        point.rotateMarker(point.direction);
+                    });
+                else
+                    $.each(series.data, function(pointIndex, point){
+                        var hcPoint = points[pointIndex],
+                            plotX   = hcPoint.plotX;
+                        if ((plotX - lastPlotX) > markerDim){
+                            point.rotateMarker(point.direction);
+                            point.showMarker();
+                            lastPlotX = plotX;
+                        }
+                        else {
+                            point.hideMarker();
+                            point.isRotated = false; //Force redraw next time
+                        }
+                    });
+            }
+        });
     });
 
 
@@ -695,6 +732,8 @@ axis        : Each parameter get own y-axis in own color
             directionArrow: true        //Use default setting
             directionArrow: false       //Do not display direction arrows/images
             directionArrow: STRING      //id from directionArrows of arrow to use
+
+            showAllArrows: BOOLEAN (false)    //When true all arrows are shown, when false the number of arrows shown are adjusted automatic to prevent overlap
 
             showLegendArrow: BOOLEAN (false).   If true and directionArrow the direction arrow used for a series is shown in the legend.
                                                 It is the directionArrow and showLegendArrow of the first sub-series that desides if and what to show in the legend
