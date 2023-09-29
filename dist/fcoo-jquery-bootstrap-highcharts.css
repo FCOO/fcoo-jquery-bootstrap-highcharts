@@ -12,26 +12,32 @@
   width: 100%;
   height: 100%;
   padding: 0;
-  margin: 0; }
+  margin: 0;
+}
 
 .chart-tooltip-table {
-  margin: auto; }
+  margin: auto;
+}
 
 .chart-tooltip-time {
   display: inline-block;
   width: 100%;
-  text-align: center; }
+  text-align: center;
+}
 
 .chart-tooltip-name {
   max-width: 160px;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis; }
+  text-overflow: ellipsis;
+}
 
 .chart-tooltip-value {
   text-align: right;
-  padding-left: .5em; }
-  .chart-tooltip-value.center {
-    display: inline-block;
-    width: 100%;
-    text-align: center; }
+  padding-left: 0.5em;
+}
+.chart-tooltip-value.center {
+  display: inline-block;
+  width: 100%;
+  text-align: center;
+}
