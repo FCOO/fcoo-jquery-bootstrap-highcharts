@@ -252,7 +252,7 @@ axis        : Each parameter get own y-axis in own color
     standardConvert
     ****************************************************************************/
     function standardConvert(data){
-        return  $.isArray(data) ?
+        return  Array.isArray(data) ?
                 {data: data} : {
                     data         : data.data || this.data,
                     pointStart   : data.start || data.pointStart || this.start,
@@ -326,6 +326,9 @@ axis        : Each parameter get own y-axis in own color
     SingleTimeSeries(options)
     ****************************************************************************/
     var SingleTimeSeries = function(options){
+
+        this.redraw = false;
+
         this.options = options;
         this.convert = options.convert || standardConvert;
 
@@ -433,7 +436,7 @@ axis        : Each parameter get own y-axis in own color
             return {
                 fileName: this.options.fileName ? ns.path.dataFileName(this.options.fileName) : null,
                 data    : this.options.data,
-                resolve : $.proxy(this.resolve, this)
+                resolve : this.resolve.bind(this)
             };
         },
 
@@ -441,6 +444,9 @@ axis        : Each parameter get own y-axis in own color
         resolve - Update the chart with the info returned from the convert-function
         *********************************************************/
         resolve: function(data){
+            if (!data)
+                return this;
+
             var seriesDataOptions = {},
                 options = this.convert(data, this);
 
@@ -499,7 +505,7 @@ axis        : Each parameter get own y-axis in own color
                     }
                     else
                         //2:, 3:, 4: singleDataSet = [FLOAT, SINGLEDATA]
-                        if ($.isArray(singleDataSet) && (singleDataSet.length == 2)){
+                        if (Array.isArray(singleDataSet) && (singleDataSet.length == 2)){
                             timestep   = singleDataSet[0];
                             singleData = singleDataSet[1];
                         }
@@ -514,7 +520,7 @@ axis        : Each parameter get own y-axis in own color
                                 return;
 
                     //singleData = [FLOAT, FLOAT] (speed, direction) or {y:FLOAT, d:FLOAT} or {y:FLOAT, direction:FLOAT} or {speed:FLOAT, direction:FLOAT}
-                    if ($.isArray(singleData)){
+                    if (Array.isArray(singleData)){
                         speed     = singleData[0];
                         direction = singleData[1];
                     }
@@ -533,7 +539,8 @@ axis        : Each parameter get own y-axis in own color
             }
 
             //this.series is set in TimeSeries.createChart
-            this.series.update(seriesDataOptions, false);
+            this.series.update(seriesDataOptions, this.redraw);
+            this.redraw = true;
         }
     };
 
@@ -581,16 +588,16 @@ axis        : Each parameter get own y-axis in own color
         options);
         this.finally = options.finally || function(){};
 
-        this.parameter = $.isArray(options.parameter) ? options.parameter : [options.parameter];
+        this.parameter = Array.isArray(options.parameter) ? options.parameter : [options.parameter];
         $.each(this.parameter, function(index, param){
             _this.parameter[index] = ns.parameter.getParameter(param);
         });
         this.multiParameter = this.parameter.length > 1;
 
         this.yAxis = this.options.yAxis || this.options.axis || {};
-        this.yAxis = $.isArray(this.yAxis) ? this.yAxis : [this.yAxis];
+        this.yAxis = Array.isArray(this.yAxis) ? this.yAxis : [this.yAxis];
 
-        var unitList = options.unit ? ($.isArray(options.unit) ? options.unit : [options.unit]) : [];
+        var unitList = options.unit ? (Array.isArray(options.unit) ? options.unit : [options.unit]) : [];
         $.each(this.parameter, function(index, param){
             if (unitList.length > index){
                 //Clone the parameter and set it to use the new unit
@@ -612,7 +619,7 @@ axis        : Each parameter get own y-axis in own color
         this.z = options.z || null;
 
         options.location = options.location || '';
-        this.location  = $.isArray(options.location)  ? options.location  : [options.location];
+        this.location  = Array.isArray(options.location)  ? options.location  : [options.location];
         this.locationName = [];
         $.each(this.location, function(index, loc){
             _this.locationName[index] = loc ? $._bsAdjustIconAndText(loc).text : '';
@@ -628,10 +635,10 @@ axis        : Each parameter get own y-axis in own color
         this.allHaveTooltip = true;  //true if ALL series have tooltip. Is updated when a series is added using this._createSingleTimeSeries
 
 
-        $.each($.isArray(options.series)  ? options.series : [options.series], function(index, seriesOptions){
+        $.each(Array.isArray(options.series)  ? options.series : [options.series], function(index, seriesOptions){
 
-            //If seriesOptions is an array => it contains list of series-options where [0] is the main and [1..N] if sub-series linked to the main seriesdata for a single series, else opt is a multi series
-            if ($.isArray(seriesOptions)){
+            //If seriesOptions is an array => it contains list of series-options where [0] is the main and [1..N] is sub-series linked to the main seriesdata for a single series, else opt is a multi series
+            if (Array.isArray(seriesOptions)){
                 var mainSingleTimeSeries = _this._createSingleTimeSeries(seriesOptions[0], index);
                 _this.series.push(mainSingleTimeSeries);
 
@@ -647,7 +654,9 @@ axis        : Each parameter get own y-axis in own color
     }
 
     BaseTimeSeries.prototype = {
-        //**********************************************
+        /**********************************************
+        _createSingleTimeSeries(options, index, mainSeries){
+        ************************************************/
         _createSingleTimeSeries(options, index, mainSeries){
             //If a mainSeries is given => use its options (without data) as default options for the new SingleTimeSeries
             if (mainSeries){
@@ -672,6 +681,14 @@ axis        : Each parameter get own y-axis in own color
             var singleTimeSeries = new SingleTimeSeries(options);
             singleTimeSeries.index = index;
             singleTimeSeries.timeSeries = this;
+
+            if (mainSeries){
+                mainSeries.hasSubSeries = true;
+                mainSeries.subSeries = mainSeries.subSeries || [];
+                mainSeries.subSeries.push(singleTimeSeries);
+            }
+
+
             singleTimeSeries.parameter  = this.multiParameter ? this.parameter[index] : this.parameter[0];
             singleTimeSeries.location   = this.multiLocation  ? this.location[index]  : this.location[0];
 
@@ -683,7 +700,9 @@ axis        : Each parameter get own y-axis in own color
             return singleTimeSeries;
         },
 
-        //**********************************************
+        /**********************************************
+        _tooltip_get_fix: function(point){
+        ************************************************/
         _tooltip_get_fix: function(point){
             var result = {};
             $.each(['Prefix', 'Postfix'], function(index, position){
@@ -742,10 +761,14 @@ axis        : Each parameter get own y-axis in own color
                     '</b>';
         },
 
-        //**********************************************
+        /**********************************************
+        _finally
+        ************************************************/
         _finally: function(){},
 
-        //**********************************************
+        /**********************************************
+        set(path, options)
+        ************************************************/
         set: function(path, options){
             path = path.split('.');
             var obj = this.chartOptions,
@@ -760,10 +783,15 @@ axis        : Each parameter get own y-axis in own color
             obj[id] = options;
         },
 
-        //**********************************************
-        createChart: function(){
+        /**********************************************
+        createChart
+        ************************************************/
+        createChart: function(container){
             var _this = this,
                 chartOptions = this.chartOptions;
+
+            //Destroy the chart (if any). In furture versions is will be possible to har the samee TimeSeries used to create multi charts
+            this.destroyChart();
 
             //Title
             if (this.options.noTitle)
@@ -807,7 +835,7 @@ axis        : Each parameter get own y-axis in own color
             //Set vertical line
             var plotLines = [],
                 verLineList = this.options.verticalLines || [];
-            $.each( $.isArray(verLineList) ? verLineList : [verLineList], function(index, lineOptions){
+            $.each( Array.isArray(verLineList) ? verLineList : [verLineList], function(index, lineOptions){
                 lineOptions = $.extend(true, {}, {
                     width    : 1,
                     color    : 'black',
@@ -1026,7 +1054,7 @@ axis        : Each parameter get own y-axis in own color
             /****************************************
             Create the chart
             ****************************************/
-            var chart = this.chart = this.chartConstructor(this.options.container, this.chartOptions);
+            var chart = this.chart = this.chartConstructor(container || this.options.container, this.chartOptions);
             chart.fcooTimeSeries = this;
 
             //Load data
@@ -1055,10 +1083,75 @@ axis        : Each parameter get own y-axis in own color
 
                 chart.promiseList.append( singleTimeSeries.promiseListOptions() );
             });
-
             chart.promiseList.promiseAll();
             return chart;
+        },
+
+        /**********************************************
+        destroyChart
+        ************************************************/
+        destroyChart: function(){
+            if (this.chart)
+                this.chart.destroy();
+            return this;
+        },
+
+        /**********************************************
+        setData
+        A simple method to update/replace data for one parameter
+        ************************************************/
+        setData: function(parameterId, data){
+            return this.setSingleSeriesData(this.series.find((singleSeries) => singleSeries.parameter.id == parameterId), data);
+        },
+
+        /**********************************************
+        setSingleSeriesData
+        A simple method to update/replace data for a given singleSeries
+        ************************************************/
+        setSingleSeriesData: function(singleSeries, data){
+            if (!singleSeries || !data) return this;
+
+            /*
+            There are two posibilities:
+                singleSeries do not have subSeries => data are used directley
+                singleSeries have subSeries => data must be []Data and each SingleSeries are updated with new data (if any)
+            */
+            if (singleSeries.hasSubSeries && !Array.isArray(data))
+                return;
+
+            let seriesList = [], dataList = [];
+            //Add main Series to lists
+            seriesList.push(singleSeries);
+            dataList.push(singleSeries.hasSubSeries ? data[0] : data);
+            if (singleSeries.hasSubSeries){
+                for (var dataIndex=1; dataIndex < data.length; dataIndex++){
+                    let seriesIndex = dataIndex - 1;
+                    if (seriesIndex < singleSeries.subSeries.length){
+                        seriesList.push(singleSeries.subSeries[seriesIndex]);
+                        dataList.push(data[dataIndex]);
+                    }
+                }
+            }
+            dataList.forEach((data, index) => data ? seriesList[index].resolve(data) : null );
+            return this;
+        },
+
+
+        /**********************************************
+        setAllData
+        A simple method to update/replace data for all parameters
+        ************************************************/
+        setAllData: function(data){
+            if (!Array.isArray(data))
+                return;
+
+            this.series.forEach((singleSeries, index) => {
+                this.setSingleSeriesData(singleSeries, index < data.length ? data[index] : null);
+            }, this);
+
         }
+
+
     };
 
 
@@ -1087,7 +1180,7 @@ axis        : Each parameter get own y-axis in own color
 
 
     nsHC.timeSeries = function(options){
-        return (new TimeSeries(options)).createChart();
+        return new TimeSeries(options);
     };
 
     /****************************************************************************
@@ -1181,7 +1274,7 @@ axis        : Each parameter get own y-axis in own color
 
 
     nsHC.historicalTimeSeries = function(options){
-        return (new HistoricalTimeSeries(options)).createChart();
+        return new HistoricalTimeSeries(options);
     };
 
 }(jQuery, this.Highcharts, this.i18next, this.moment, this, document));

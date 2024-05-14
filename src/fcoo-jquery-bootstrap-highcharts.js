@@ -270,7 +270,7 @@ Meteorogram: https://www.highcharts.com/demo/combo-meteogram#https://www.yr.no/p
     Create the chart using chartConstructor
     *********************************************************/
     function createHighchart(chartConstructor, container, callback, options, optionsList = [], adjustOptionsFunc = function(opt){return opt;}){
-        optionsList = $.isArray(optionsList) ? optionsList : [optionsList];
+        optionsList = Array.isArray(optionsList) ? optionsList : [optionsList];
         optionsList.push(defaultChartOptions, options);
 
         var chartOptions = {};

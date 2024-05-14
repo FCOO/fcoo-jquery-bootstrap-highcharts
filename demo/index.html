@@ -131,7 +131,7 @@
 
             //*************************************************************
             function createTimeSerieChart(parameter, location, unit, $container, options = {}){
-                if (mainChart) mainChart.destroy(); 
+                if (mainChart) mainChart.destroyChart(); 
 
                 var firstParameterIsVector = fcoo.parameter.getParameter(parameter[0]).type == 'vector';
 
@@ -175,6 +175,7 @@
                         }
                     }, options)
                 );
+                mainChart.createChart();
             }
             
             function addButton2(text, parameter, location, unit, options){
@@ -205,50 +206,51 @@
             function addButton4(){
                 return $('<button style="width:100%">2xP (Multi series) + 1xL</button>')
                     .on('click', function(){
-                        if (mainChart) 
-                            mainChart.destroy(); 
+                        if (mainChart) mainChart.destroyChart(); 
 
                         mainChart = fcoo.hc.timeSeries({
                             container: $mainContainer,
                             //parameter: 'sea_surface_height_above_mean_sea_level',
                             //parameter: ['sea_water_velocity'],
-                            parameter: ['sea_surface_height_above_mean_sea_level', 'sea_water_velocity'],
+                            parameter: ['sea_water_velocity', 'sea_surface_height_above_mean_sea_level'],
                             location : {da: 'Lokationen', en:'The Location'},
                             tooltip: {backgroundColor: 'green'},
-                            series   : [{
+                            series   : [
+                                [   {
+                                        color :  0, 
+                                        marker: true,
+                                        directionArrow: 'fal-arrow-alt-up',//true,
+                                        noTooltip: false, //true,
+                                        data: test, //dataList[0]
+                                    },{   
+                                        deltaColor: +2, 
+                                        //tooltipPrefix: {da:' (DA) ', en:' (EN) '},                         
+                                        noTooltip: false,
+                                        marker: false, 
+                                        directionArrow: true,
+                                        showAllArrows: true,
+                                        dashStyle:'DashDot', 
+                                        data: dataWithDirection(dataList[1])
+                                    },{   
+                                        deltaColor: -2, 
+                                        tooltipPrefix: '',
+                                        noTooltip: false,
+                                        marker: false, 
+                                        directionArrow: false,
+                                        dashStyle: 'Dash',
+                                        data: dataList[2]
+                                    }
+                                ],
+                                {
                                     color: 4, 
                                     //data: test,
                                     data: list[1],
                                     
                                     //maxGap: 12 * 60,
                                     markerSize: 2,
-                                    visible: false,
+                                    //visible: false,
                                 }, 
-                                [{
-                                    color :  0, 
-                                    marker: true,
-                                    directionArrow: 'fal-arrow-alt-up',//true,
-                                    noTooltip: false, //true,
-                                    data: test, //dataList[0]
-                                },{   
-                                    deltaColor: +2, 
-                                    //tooltipPrefix: {da:' (DA) ', en:' (EN) '},                         
-                                    noTooltip: false,
-                                    marker: false, 
-                                    directionArrow: true,
-                                    showAllArrows: true,
-                                    dashStyle:'DashDot', 
-                                    data: dataWithDirection(dataList[1])
-                                },{   
-                                    deltaColor: -2, 
-                                    tooltipPrefix: '',
-                                    noTooltip: false,
-                                    marker: false, 
-                                    directionArrow: false,
-                                    dashStyle: 'Dash',
-                                    data: dataList[2]
-                                }]
-
+                                
                             ],
         
                             chartOptions: { 
@@ -256,6 +258,16 @@
                                 container: { css: {height:'50%'} } 
                             }
                         });
+                        mainChart.createChart();
+                        
+                        setTimeout(() => {
+                            mainChart.setData('sea_surface_height_above_mean_sea_level', list[4]);
+                            mainChart.setData('sea_water_velocity', [null, null, dataList[2]]);
+                        }, 2000);
+                        setTimeout(() => {
+                            mainChart.setAllData([[null, null, dataList[2]], list[1] ]);
+                        }, 4000);
+
                     })
                     .appendTo(main.leftMenu.$menu);
             }
@@ -295,7 +307,8 @@
 
 
             $('<button style="width:100%">Long 1xP + 1xL</button>').on('click', function(){
-                if (mainChart) mainChart.destroy(); 
+                if (mainChart) mainChart.destroyChart(); 
+                
                 mainChart = fcoo.hc.historicalTimeSeries({
                     container: $mainContainer,
                     parameter: "air_temperature",
@@ -304,10 +317,11 @@
         
                     chartOptions: { container: { css: {height:'50%'} } }
                 });
+                mainChart.createChart();
             }).appendTo(main.leftMenu.$menu);
 
             $('<button style="width:100%">Long 1xP + 3xL</button>').on('click', function(){
-                if (mainChart) mainChart.destroy(); 
+                if (mainChart) mainChart.destroyChart(); 
                 mainChart = fcoo.hc.historicalTimeSeries({
                     container: $mainContainer,
                     parameter: "air_temperature",
@@ -317,10 +331,12 @@
         
                     chartOptions: { container: { css: {height:'50%'} } }
                 });
+                mainChart.createChart();
+               
             }).appendTo(main.leftMenu.$menu);
 
             $('<button style="width:100%">Long 3xP + 1xL</button>').on('click', function(){
-                if (mainChart) mainChart.destroy(); 
+                if (mainChart) mainChart.destroyChart(); 
                 mainChart = fcoo.hc.historicalTimeSeries({
                     container: $mainContainer,
                     parameter: ["air_temperature", "air_pressure_at_mean_sea_level", "visibility_in_air"],
@@ -329,6 +345,8 @@
         
                     chartOptions: { container: { css: {height:'50%'} } }
                 });
+                mainChart.createChart();
+                
             }).appendTo(main.leftMenu.$menu);
             
 
