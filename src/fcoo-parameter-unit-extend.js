@@ -54,7 +54,7 @@ Extend Parameter-object from fcoo-parameter-unit to interact with Highchart
         //hcOptions_XX: Return options for given part of options for charts
         hcOptions_axis_title: function(z){
             return {
-                text: this.decodeGetName(true, false, z) //decodeGetName(inclUnit, useSpeedParameter, z)
+                text: this.decodeGetName(true, false, z)
             };
         },
 

@@ -420,7 +420,7 @@ Extend Parameter-object from fcoo-parameter-unit to interact with Highchart
         //hcOptions_XX: Return options for given part of options for charts
         hcOptions_axis_title: function(z){
             return {
-                text: this.decodeGetName(true, false, z) //decodeGetName(inclUnit, useSpeedParameter, z)
+                text: this.decodeGetName(true, false, z)
             };
         },
 
@@ -1028,10 +1028,7 @@ axis        : Each parameter get own y-axis in own color
 
     ****************************************************************************/
     function BaseTimeSeries(options){
-        var _this = this;
-
         this.chartOptions = options.chartOptions || {};
-
         this.chartConstructor = nsHC.chart;
         this.options = $.extend(true, {}, {
             //Default options
@@ -1042,22 +1039,32 @@ axis        : Each parameter get own y-axis in own color
         options);
         this.finally = options.finally || function(){};
 
+        //Create this.parameter = [9Parameter and this.zList = []STRING/NULL
+        this.zList = [];
+        let optionsZ = options.z || options.zList || '';
+
         this.parameter = Array.isArray(options.parameter) ? options.parameter : [options.parameter];
-        $.each(this.parameter, function(index, param){
-            _this.parameter[index] = ns.parameter.getParameter(param);
-        });
+        this.parameter.forEach( (param, index) => {
+            this.parameter[index] = ns.parameter.getParameter(param);
+
+            if (Array.isArray(optionsZ))
+                this.zList.push( optionsZ.length > index ? optionsZ[index] : null );
+            else
+                this.zList.push(optionsZ);
+
+        }, this);
         this.multiParameter = this.parameter.length > 1;
 
         this.yAxis = this.options.yAxis || this.options.axis || {};
         this.yAxis = Array.isArray(this.yAxis) ? this.yAxis : [this.yAxis];
 
         var unitList = options.unit ? (Array.isArray(options.unit) ? options.unit : [options.unit]) : [];
-        $.each(this.parameter, function(index, param){
+        this.parameter.forEach( (param, index) => {
             if (unitList.length > index){
                 //Clone the parameter and set it to use the new unit
                 var unit = nsParameter.getUnit(unitList[index]),
                     decimals = Math.max(0, param.decimals + Math.round(Math.log10(unit.SI_factor/param.unit.SI_factor))),
-                    clonedParam =  _this.parameter[index] = $.extend(true, {}, param);
+                    clonedParam =  this.parameter[index] = $.extend(true, {}, param);
                 clonedParam.decimals = decimals;
                 clonedParam.unit = unit;
 
@@ -1068,16 +1075,14 @@ axis        : Each parameter get own y-axis in own color
                     speedParam.unit = unit;
                 }
             }
-        });
-
-        this.z = options.z || null;
+        }, this);
 
         options.location = options.location || '';
         this.location  = Array.isArray(options.location)  ? options.location  : [options.location];
         this.locationName = [];
-        $.each(this.location, function(index, loc){
-            _this.locationName[index] = loc ? $._bsAdjustIconAndText(loc).text : '';
-        });
+        this.location.forEach( (loc, index) => {
+            this.locationName[index] = loc ? $._bsAdjustIconAndText(loc).text : '';
+        }, this);
         this.multiLocation = this.location.length > 1;
 
         this.singleSingle = !this.multiParameter && !this.multiLocation;
@@ -1088,23 +1093,22 @@ axis        : Each parameter get own y-axis in own color
         this.anyHasTooltip  = false; //true if at least one series has tooltip. Is updated when a series is added using this._createSingleTimeSeries
         this.allHaveTooltip = true;  //true if ALL series have tooltip. Is updated when a series is added using this._createSingleTimeSeries
 
-
-        $.each(Array.isArray(options.series)  ? options.series : [options.series], function(index, seriesOptions){
+        (Array.isArray(options.series)  ? options.series : [options.series]).forEach( (seriesOptions, index) => {
 
             //If seriesOptions is an array => it contains list of series-options where [0] is the main and [1..N] is sub-series linked to the main seriesdata for a single series, else opt is a multi series
             if (Array.isArray(seriesOptions)){
-                var mainSingleTimeSeries = _this._createSingleTimeSeries(seriesOptions[0], index);
-                _this.series.push(mainSingleTimeSeries);
+                var mainSingleTimeSeries = this._createSingleTimeSeries(seriesOptions[0], index);
+                this.series.push(mainSingleTimeSeries);
 
                 //Add the rest as sub series
-                $.each(seriesOptions, function(subIndex, subSeriesOptions){
+                seriesOptions.forEach( (subSeriesOptions, subIndex) => {
                     if (subIndex)
-                        _this.subSeries.push( _this._createSingleTimeSeries(subSeriesOptions, index, mainSingleTimeSeries) );
-                });
+                        this.subSeries.push( this._createSingleTimeSeries(subSeriesOptions, index, mainSingleTimeSeries) );
+                }, this);
             }
             else
-                _this.series.push( _this._createSingleTimeSeries(seriesOptions, index) );
-        });
+                this.series.push( this._createSingleTimeSeries(seriesOptions, index) );
+        }, this);
     }
 
     BaseTimeSeries.prototype = {
@@ -1254,13 +1258,13 @@ axis        : Each parameter get own y-axis in own color
                 if (this.multiParameter || this.singleSingle)
                     this.set('title.text', this.locationName[0]);
                 else
-                    this.set('title.text', this.parameter[0].decodeGetName(true, false, this.z));
+                    this.set('title.text', this.parameter[0].decodeGetName(true, false, this.zList[0]));
             }
 
             //Sub-title = paramter-name if only one location and one paramter
             if (this.singleSingle){
                 if (!this.options.noSubTitle)
-                    this.set('subtitle', this.parameter[0].hcOptions_axis_title(this.z));
+                    this.set('subtitle', this.parameter[0].hcOptions_axis_title(this.zList[0]));
 
                 this.set('legend.enabled', false);
             }
@@ -1310,7 +1314,7 @@ axis        : Each parameter get own y-axis in own color
             this.set('tooltip.enabled', this.anyHasTooltip);
             if (this.anyHasTooltip){
                 //Set common tooltip for single parameter-mode (in multi-parameter mode the tooltip is set pro series
-                chartOptions.tooltip = this.parameter[0].hcOptions_series_tooltip('', this.z);
+                chartOptions.tooltip = this.parameter[0].hcOptions_series_tooltip('', this.zList[0]);
 
                 $.extend(chartOptions.tooltip, this.options.tooltip || {});
 
@@ -1390,9 +1394,10 @@ axis        : Each parameter get own y-axis in own color
                     else
                         seriesAxisIndex.push(i);
 
-                $.each(this.parameter, function(index, parameter){
-                    var color = _this.series[index].getChartOptions().color,
-                        style = {color: color};
+                this.parameter.forEach( (parameter, index) => {
+                    var color = this.series[index].getChartOptions().color,
+                        style = {color: color},
+                        z = this.zList[index];
 
                     nextAxis = {
                         lineColor: color,
@@ -1400,7 +1405,7 @@ axis        : Each parameter get own y-axis in own color
 
                         opposite: index > leftAxisIndex,
                         title: {
-                            text: parameter.decodeGetName(true, true, _this.z),
+                            text: parameter.decodeGetName(true, true, this.singleSingle && z ? z : false),
                             style: style
                         },
                         showEmpty: false,   //=> Remove both axis and title when serie is unselected
@@ -1411,7 +1416,7 @@ axis        : Each parameter get own y-axis in own color
                         }
                     };
 
-                    if (_this.options.zeroLine && parameter.negative)
+                    if (this.options.zeroLine && parameter.negative)
                         nextAxis.plotLines = [{
                             color: color,
                             width: 2,
@@ -1422,7 +1427,7 @@ axis        : Each parameter get own y-axis in own color
 
                     //Replace the index-number in yAxis with the axis-options
                     chartOptions.yAxis[ seriesAxisIndex[index] ] = nextAxis;
-                });
+                }, this);
             }
 
             //Update yAxis with other options
@@ -1446,14 +1451,15 @@ axis        : Each parameter get own y-axis in own color
             //Name of series
             chartOptions.series = [];
             if (this.multiParameter || this.singleSingle)
-                $.each(this.parameter, function(index, parameter){
+                this.parameter.forEach( (parameter, index) => {
+                    let z = this.zList[index];
                     chartOptions.series.push({
-                        name         : parameter.decodeGetName(true, false, _this.z),
-                        nameInTooltip: parameter.decodeGetName(false, false/*true*/, _this.z), //<- Changed 2021-06-10 to show vector-name instead of speed-name
+                        name         : parameter.decodeGetName(true, false, z),
+                        nameInTooltip: parameter.decodeGetName(false, false/*true*/, z), //<- Changed 2021-06-10 to show vector-name instead of speed-name
                         yAxis        : seriesAxisIndex[index],
-                        tooltip      : parameter.hcOptions_series_tooltip('', _this.z)
+                        tooltip      : parameter.hcOptions_series_tooltip('', z)
                     });
-                });
+                }, this);
             else {
                 $.each(this.locationName, function(index, location){
                     chartOptions.series.push({name: location});

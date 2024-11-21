@@ -33,7 +33,6 @@
         var main = window.fcoo.createMain({
                 topMenu: {search: false},
                 leftMenu: {width: 321},
-//HER                onResizeEnd: function(){ console.log('END'); }
             }),
             $mainContainer = main.$mainContainer,
             mainContainer = $mainContainer.get(0),
@@ -106,15 +105,6 @@
             });
 
             
-//HER            var time = moment().year(1999),                         
-//HER                newData = [];
-//HER            $.each(list[0].data, function(index, value){
-//HER                newData.push( [time.valueOf(), value] );
-//HER                time.add(interval, 'milliseconds');
-//HER            });
-//HER            list[0] = newData;
-
-            
             //*************************************************************
             function dataWithDirection(options){
                 var result = {
@@ -124,7 +114,6 @@
                     };
                 $.each(options.data, function(index, value){
                     result.data.push([value, index*30 % 360]);
-//HER                    result.data.push({y:value, d:index*30 % 360});
                 });
                 return result;
             }
@@ -152,9 +141,18 @@
                 if (parameter[0] == 'sea_surface_height_above_mean_sea_level')
                     axis.push({minRange: .80});
 
+                let zList = [];
+                parameter.forEach( pName => {
+                    if ((pName == 'sea_water_velocity') || (pName == 'sea_water_salinity') || (pName == 'speed_of_sound_in_sea_water'))
+                        zList.push({da:'bund', en:'seafloor'})
+                    else                        
+                        zList.push('');
+                });                    
+
                 mainChart = fcoo.hc.timeSeries($.extend(true, {
                         container: $container || $mainContainer,
                         parameter: parameter,
+                        zList    : zList,
                         unit     : unit,
                         location : location,
                         series   : series,
@@ -213,6 +211,7 @@
                             //parameter: 'sea_surface_height_above_mean_sea_level',
                             //parameter: ['sea_water_velocity'],
                             parameter: ['sea_water_velocity', 'sea_surface_height_above_mean_sea_level'],
+                            zList    : [{da:'oveflade', en:'surface'}],
                             location : {da: 'Lokationen', en:'The Location'},
                             tooltip: {backgroundColor: 'green'},
                             series   : [
