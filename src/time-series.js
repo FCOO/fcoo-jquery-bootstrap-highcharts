@@ -912,9 +912,7 @@ axis        : Each parameter get own y-axis in own color, or all axels in black 
                         lineWidth: 1,
 
                         title: {
-                            text: parameter.id,
-                            __text: index+' '+parameter.decodeGetName(true, true, this.singleSingle && z ? z : false).da,
-                            _text: parameter.decodeGetName(true, true, this.singleSingle && z ? z : false),
+                            text: parameter.decodeGetName(true, true, this.singleSingle && z ? z : false),
                             style: style
                         },
                         showEmpty: false,   //=> Remove both axis and title when serie is unselected
