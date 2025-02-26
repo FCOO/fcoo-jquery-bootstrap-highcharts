@@ -9,8 +9,8 @@
 	<meta name='copyright' content='FCOO'>
 	<meta name='owner' content='FCOO'>
 
-  <link  href="bower_components.css" rel="stylesheet">	
-  <link  href="../src/fcoo-jquery-bootstrap-highcharts.css" rel="stylesheet">	
+    <link  href="bower_components.css" rel="stylesheet"> 
+    <link  href="../src/fcoo-jquery-bootstrap-highcharts.css" rel="stylesheet">	
 </head>
 
 <body>
@@ -29,6 +29,17 @@
 
         window.fcoo.path.host = 'bal.fcoo.dk';
 
+        window.Highcharts.USE_JB_STYLE = true;
+
+        Promise.defaultErrorHandler = function( error ){
+            console.log('*********************');
+            console.log('DEFAULT error-handler');
+            console.log('status=', error.status);
+            console.log('url=', error.url);
+            console.log('text=', error.text);
+            console.log(error);
+            console.log('*********************');
+        }
 
         var main = window.fcoo.createMain({
                 topMenu: {search: false},
@@ -81,6 +92,22 @@
                     start   : startDate, 
                     interval: interval,
                     data    : [249, 264, 272, 295, 490, 282, 121, 434]
+
+                
+                }, {
+                    start   : startDate, 
+                    interval: interval,
+                    data    : [29, 2.7722, 2.6005, 2.9771, 1.0185, 1.4377, 2.2147, 4.9387]
+                
+                }, {
+                    start   : startDate, 
+                    interval: interval,
+                    data    : [12, 17, 16, 19, 11, 14, 12, 114]
+                
+                }, {
+                    start   : startDate, 
+                    interval: interval,
+                    data    : [2.1744, 2.7722, 2.6005, 2.9771, 1.0185, 1.4377, 2.2147, 4.9387]
                 }];
 
 
@@ -119,7 +146,8 @@
             }
 
             //*************************************************************
-            function createTimeSerieChart(parameter, location, unit, $container, options = {}){
+            function createTimeSerieChart(parameter, location, unit, $container, options = {}, firstListIndex = 0){
+                
                 if (mainChart) mainChart.destroyChart(); 
 
                 var firstParameterIsVector = fcoo.parameter.getParameter(parameter[0]).type == 'vector';
@@ -127,7 +155,7 @@
                 var series = [];
                 for (var i=0; i<Math.max(parameter.length || 1, location.length || 1); i++){
                     var nextSeries = {
-                        data: $.extend(true, {}, list[i]) 
+                        data: $.extend(true, {}, list[i + firstListIndex]) 
                     };
                     if (!i && firstParameterIsVector){
                         nextSeries.data = dataWithDirection(nextSeries.data);
@@ -139,7 +167,7 @@
 
                 var axis = [];
                 if (parameter[0] == 'sea_surface_height_above_mean_sea_level')
-                    axis.push({minRange: .80});
+                    axis.push({minRange: 1});
 
                 let zList = [];
                 parameter.forEach( pName => {
@@ -156,7 +184,7 @@
                         unit     : unit,
                         location : location,
                         series   : series,
-                        axis: axis,
+                        axis     : axis,
                         chartOptions: { 
                             chart: {
                                 scrollablePlotArea: {
@@ -164,7 +192,7 @@
                                     scrollPositionX: 1
                                }
                             },
-                            container: { css: {height:'50%'} } 
+                            container: { css: {height:'50%'} },
                         },
                         verticalLines: {
                             value: Date.UTC(1999,4,31), 
@@ -176,23 +204,23 @@
                 mainChart.createChart();
             }
             
-            function addButton2(text, parameter, location, unit, options){
-                $('<button style="width:100%">'+text+'</button>')
+            function addButton2(text, parameter, location, unit, options, firstListIndex = 0){
+                return $('<button style="width:100%">'+text+'</button>')
                     .on('click', function(){
-                        createTimeSerieChart(parameter, location, unit, null, options);
+                        createTimeSerieChart(parameter, location, unit, null, options, firstListIndex);
                     })
                     .appendTo(main.leftMenu.$menu);
             }
 
             function addButton3(text, parameter, location, unit){
-                $('<button style="width:100%">'+text+'</button>')
+                return $('<button style="width:100%">'+text+'</button>')
                     .on('click', function(){
                         $.bsModal({
                             header: {text: text},
                             //flexWidth: true, 
                             //megaWidth: true,
                             scroll: false,                                
-                            content: function($body){
+                            content: function($body){ 
                                 createTimeSerieChart(parameter, location, unit, $body);
                             },
                             show: true
@@ -274,15 +302,18 @@
             addButton2('1xP (SeaLevel)  + 1xL (no name)', ['sea_surface_height_above_mean_sea_level'], false);                        
             addButton2('1xP (SeaLevel [cm])  + 1xL', ['sea_surface_height_above_mean_sea_level'], {da: 'Lokationen', en:'The Location'}, 'cm', {noZoom: true, noTitle: true, noSubTitle:true, alwaysShowParameter: true, noMenu: true} );                        
             addButton2('1xP + 1xL', ['sea_water_velocity'], {da: 'Lokationen', en:'The Location'}/*, 'km/t'*/ );                        
-            addButton2('1xP + 3xL', ['sea_water_salinity'], [{da: 'Lokationen', en:'The Location'}, {da: 'Lokation 2', en:'Location 2'}, {da: 'Lokation 3 med et langt navn', en:'Location 3 with a long name'}] );
+$startWith = 
+            addButton2('>> 1xP + 3xL', ['sea_surface_height_above_mean_sea_level'], [{da: 'Lokationen', en:'The Location'}, {da: 'Lokation 2', en:'Location 2'}, {da: 'Lokation 3 med et langt navn', en:'Location 3 with a long name'}], null, null, 9);
 
             addButton2('3xP + 1xL', ['sea_water_velocity', 'sea_water_salinity', 'speed_of_sound_in_sea_water'], {da: 'Lokationen', en:'The Location'}, 'kn');                        
 
+//$startWith = 
             addButton2('9xP + 1xL', ['sea_water_velocity', 'sea_water_salinity', 'speed_of_sound_in_sea_water', 'air_temperature', 'air_pressure_at_mean_sea_level', 'sea_water_velocity', 'sea_water_salinity', 'speed_of_sound_in_sea_water', 'air_temperature'], {da: 'Lokationen', en:'The Location'});
+            //addButton2('5xP + 1xL', ['speed_of_sound_in_sea_water', 'speed_of_sound_in_sea_water', 'speed_of_sound_in_sea_water', 'speed_of_sound_in_sea_water', 'speed_of_sound_in_sea_water'], {da: 'Lokationen', en:'The Location'});
 
             addButton3('Modal 1xP (SeaLevel)  + 1xL (no name)', ['sea_surface_height_above_mean_sea_level'], false);                        
             
-            var $test = addButton4();                        
+            //var $startWith = addButton4();                        
 
 
             
@@ -296,15 +327,30 @@
             function testConvert2(data, timeSeriesData){
                 for (var i=0; i<data.dataLength; i++)
                     data.data[i] = (2*Math.random() + 1)*data.data[i];
+                    //data.data[i] = 1*data.data[i];
                 return data;
             }
             function testConvert3(data, timeSeriesData){
                 for (var i=0; i<data.dataLength; i++)
-                    data.data[i] = Math.random()*1000/*(2*Math.random() + 1)*/*data.data[i];
+                    data.data[i] = Math.abs((10*Math.random() + 1)*data.data[i]);
+                return data;
+            }
+            function testConvert4(data, timeSeriesData){
+                for (var i=0; i<data.dataLength; i++)
+                    data.data[i] = Math.abs((1000*Math.random() + 1)*data.data[i]);
                 return data;
             }
 
-
+            function testConvert5(data, timeSeriesData){
+                for (var i=0; i<data.dataLength; i++)
+                    data.data[i] = 20*10*(Math.random() -.5) + data.data[i];
+                return data;
+            }
+            function testConvert6(data, timeSeriesData){
+                for (var i=0; i<data.dataLength; i++)
+                    data.data[i] = Math.abs(1 + data.data[i]);
+                return data;
+            }
             $('<button style="width:100%">Long 1xP + 1xL</button>').on('click', function(){
                 if (mainChart) mainChart.destroyChart(); 
                 
@@ -319,6 +365,7 @@
                 mainChart.createChart();
             }).appendTo(main.leftMenu.$menu);
 
+//    $startWith = 
             $('<button style="width:100%">Long 1xP + 3xL</button>').on('click', function(){
                 if (mainChart) mainChart.destroyChart(); 
                 mainChart = fcoo.hc.historicalTimeSeries({
@@ -326,21 +373,28 @@
                     parameter: "air_temperature",
                     location: ["Vik i Sogn, Norge", "Et andet sted", "Et 3. sted"],
                     styles  : [{color:8, dashStyle:'Dash', lineWidth:4}],
-                    series  : [{fileName: 'data/large-dataset.json', convert:testConvert2}, {fileName: 'data/large-dataset.json'}, {fileName: 'data/large-dataset.json', convert:testConvert2}],
+                    series  : [{fileName: 'data/large-dataset.json', convert:testConvert5}, {fileName: 'data/large-dataset2.json', _convert:testConvert6}, {fileName: 'data/large-dataset3.json', convert:testConvert5}],
         
-                    chartOptions: { container: { css: {height:'50%'} } }
+                    chartOptions: { 
+                        container: { css: {height:'50%'} } }
                 });
                 mainChart.createChart();
                
             }).appendTo(main.leftMenu.$menu);
 
-            $('<button style="width:100%">Long 3xP + 1xL</button>').on('click', function(){
+//    $startWith = 
+            $('<button style="width:100%">Long 4xP + 1xL</button>').on('click', function(){
                 if (mainChart) mainChart.destroyChart(); 
                 mainChart = fcoo.hc.historicalTimeSeries({
                     container: $mainContainer,
-                    parameter: ["air_temperature", "air_pressure_at_mean_sea_level", "visibility_in_air"],
+                    parameter: ["air_temperature", "visibility_in_air", "air_pressure_at_mean_sea_level", "visibility_in_air"],
                     location: "Vik i Sogn, Norge",
-                    series  : [{fileName: 'data/large-dataset.json'}, {fileName: 'data/large-dataset.json', convert:testConvert3}, {fileName: 'data/large-dataset.json', convert:testConvert3}],
+                    series  : [
+                        {fileName: 'data/large-dataset.json'}, 
+                        {fileName: 'data/large-dataset.json', convert:testConvert3}, 
+                        {fileName: 'data/large-dataset.json', convert:testConvert4}, 
+                        {fileName: 'data/large-dataset.json', convert:testConvert4}
+                    ],
         
                     chartOptions: { container: { css: {height:'50%'} } }
                 });
@@ -370,7 +424,7 @@
                         });
                         */
                   
-                        $test.trigger('click');
+                        $startWith.trigger('click');
                     });
                 };
                 fcoo.promiseList_getAll();

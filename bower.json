@@ -1,6 +1,6 @@
 {
   "name": "fcoo-jquery-bootstrap-highcharts",
-  "version": "4.1.0",
+  "version": "5.0.0",
   "homepage": "https://github.com/FCOO/fcoo-jquery-bootstrap-highcharts",
   "authors": [
     "Niels Holt"
@@ -18,7 +18,8 @@
     "fcoo-application": "fcoo/fcoo-application#latest",
     "fcoo-colors": "fcoo/fcoo-colors#latest",
     "fcoo-parameter-unit": "fcoo/fcoo-parameter-unit#^1.7.0",
-    "jquery-bootstrap-highcharts": "fcoo/jquery-bootstrap-highcharts#^4.0.0"
+    "jquery-bootstrap-highcharts": "fcoo/jquery-bootstrap-highcharts#^5.0.0",
+    "sass-color-helpers": "^2.1.1"
   },
   "devDependencies": {
     "bourbon": "latest",

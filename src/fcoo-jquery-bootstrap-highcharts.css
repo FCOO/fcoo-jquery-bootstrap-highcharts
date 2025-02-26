@@ -1,3 +1,4 @@
+@charset "UTF-8";
 /***********************************************
 	fcoo-jquery-bootstrap-highcharts.scss,
 
@@ -8,6 +9,90 @@
 
 
 ************************************************/
+/**********************************************************
+	fcoo-colors-variables.scss,
+
+	https://github.com/FCOO/fcoo-colors
+	https://github.com/FCOO
+**********************************************************/
+/**********************************************************
+The color scheme is from LinkedIn and shown in linkedin-palette-screen.pdf
+**********************************************************/
+/**********************************************************
+Color for time = tree colors for the past, now, and the future
+**********************************************************/
+/**********************************************************
+Application color
+Defaults is = DALO color in "Forsvarsministeriets koncernfælles Designmanual 2018"
+Can be changed by mixin application-base-color( new-color )
+in src/_fcoo-color-mixin.scss
+**********************************************************/
+/**********************************************************
+Environmental colors
+Defines a number of colors and $-variables for different
+parts of the environmental. Eq sky, cloud, sea etc.
+**********************************************************/
+/**********************************************************
+    fcoo-colors-mixin.scss
+
+	https://github.com/FCOO/fcoo-colors
+	https://github.com/FCOO
+
+**********************************************************/
+/**********************************************************
+Functions to get colors in different (relative) gradients
+**********************************************************/
+/**********************************************************
+marker-and-polygon-color
+create color-classes for bsMarker and bsPolyline
+**********************************************************/
+/**********************************************************
+Application color
+Defaults is = DALO color in "Forsvarsministeriets koncernfælles Designmanual 2018"
+Can be changed by mixin application-base-color( new-color )
+**********************************************************/
+/*****************************
+Colors for series - taken from fcoo-colors
+*****************************/
+:root {
+  /*
+  //Variables for the the nine colors
+  $fc-blue    : 0;
+  $fc-purple  : 1;
+  $fc-red     : 2;
+  $fc-orange  : 3;
+  $fc-cyan    : 4;
+  $fc-yellow  : 5;
+  $fc-pink    : 6;
+  $fc-green   : 7;
+  $fc-gray    : 8;
+
+
+  //$fc-default-gradient = standard gradient to be used
+  $fc-default-gradient: 4 !default;
+
+  @function fc-get-color($color, $gradient: $fc-default-gradient) {
+
+  */
+  --highcharts-color-0: #E6A700;
+  /*
+      --highcharts-color-0: #2caffe;
+      --highcharts-color-0: #2caffe;
+      --highcharts-color-1: #544fc5;
+      --highcharts-color-2: #00e272;
+      --highcharts-color-3: #fe6a35;
+      --highcharts-color-4: #6b8abc;
+      --highcharts-color-5: #d568fb;
+      --highcharts-color-6: #2ee0ca;
+      --highcharts-color-7: #fa4b42;
+      --highcharts-color-8: #feb56a;
+      --highcharts-color-9: #91e8e1;
+  */
+}
+
+/*****************************
+chart-inner-container
+*****************************/
 .chart-inner-container {
   width: 100%;
   height: 100%;
@@ -15,6 +100,9 @@
   margin: 0;
 }
 
+/*****************************
+Tooltips
+*****************************/
 .chart-tooltip-table {
   margin: auto;
 }

@@ -22,6 +22,12 @@ Meteorogram: https://www.highcharts.com/demo/combo-meteogram#https://www.yr.no/p
 
 ****************************************************************************/
 
+
+/****************************************************************************
+Version 5 changes
+1: Removed resize-event
+
+****************************************************************************/
 (function ($, Highcharts, i18next, moment, window/*, document, undefined*/) {
 	"use strict";
 
@@ -109,7 +115,7 @@ Meteorogram: https://www.highcharts.com/demo/combo-meteogram#https://www.yr.no/p
     /*********************************************************
     Set default FCOO options for chart and stockChart
     *********************************************************/
-    var defaultChartOptions = {
+    let defaultChartOptions = {
             /*  alignTicks: boolean
                 When using multiple axis, the ticks of two or more opposite axes will automatically be aligned by adding ticks to the axis or axes with the least ticks, as if tickAmount were specified.
 
@@ -168,11 +174,11 @@ Meteorogram: https://www.highcharts.com/demo/combo-meteogram#https://www.yr.no/p
         defaultStockChartOptions = {
             plotOptions: {
                 series: {
-                    showInNavigator: true
+                    showInNavigator: true,
                 }
             },
 
-            rangeSelector: {
+            rangefSelector: {
                 enabled : true,
                 dropdown: 'responsive',
 
@@ -181,7 +187,7 @@ Meteorogram: https://www.highcharts.com/demo/combo-meteogram#https://www.yr.no/p
                 inputEditDateFormat : "%d %m %Y",
 
                 buttonTheme   : {width: 48},
-                buttonPosition: {align: 'middle'},
+                buttonPosition: {align: 'left'},
 
                 buttons : ['3 d', '1 w', '1 m', '6 m', '1 y'],
                 selected: 3,
@@ -227,12 +233,13 @@ Meteorogram: https://www.highcharts.com/demo/combo-meteogram#https://www.yr.no/p
     Save the current dim of the container and set a timeout to
     check if the dim is changed => the chart has redrawn itself
     *********************************************************/
+/* 1:
     function chart_onResize(){
         this._save_containerWidth = this.containerWidth;
         this._save_containerHeight = this.containerHeight;
 
         window.clearTimeout(this._resize_timeout_id);
-        this._resize_timeout_id = window.setTimeout( $.proxy( function(){
+        this._resize_timeout_id = window.setTimeout( function(){
             if (
                     ( Math.round(this.$outerContainer.width()  ) != Math.round(this.containerWidth ) ) ||
                     ( Math.round(this.$outerContainer.height() ) != Math.round(this.containerHeight) )
@@ -240,16 +247,16 @@ Meteorogram: https://www.highcharts.com/demo/combo-meteogram#https://www.yr.no/p
                 //The outer-container has resized but the chart has not
                 this.reflow();
             }
-        }, this), 100);
+        }.bind(this), 100);
     }
-
+*/
     /*********************************************************
     Extend Chart.destroy to also remove resize-event from is container
     *********************************************************/
     Highcharts.Chart.prototype.destroy = function (Chart_destroy) {
         return function(){
-            if (this.$outerContainer && this._fcoo_onResize)
-                this.$outerContainer.removeResize(this._fcoo_onResize);
+//1            if (this.$outerContainer && this._fcoo_onResize)
+//1                this.$outerContainer.removeResize(this._fcoo_onResize);
 
             var $innerContainer = this.$innerContainer,
                 result = Chart_destroy.apply(this, arguments);
@@ -260,6 +267,109 @@ Meteorogram: https://www.highcharts.com/demo/combo-meteogram#https://www.yr.no/p
             return result;
         };
     }(Highcharts.Chart.prototype.destroy);
+
+
+    /*********************************************************
+    Extend Point with method to format any value
+    *********************************************************/
+    Highcharts.Point.prototype.formatValue = function (value) {
+        var saveY = this.y;
+        this.y = value;
+        var result = this.tooltipFormatter('{point.y}');
+        this.y = saveY;
+        return result;
+    };
+
+    /****************************************************************************
+    Extend Point.tooltipFormatter to also translate other options
+    ****************************************************************************/
+    var translateSeriesOptions = ['nameInTooltip'];
+    Highcharts.Point.prototype.tooltipFormatter = function (tooltipFormatter) {
+        return function(){
+            var opt = this.series.options;
+            translateSeriesOptions.forEach( id => {
+                var id_i18next = id+'i18next';
+                if (!opt[id]) return;
+
+                if ($.type(opt[id]) == "object")
+                    opt[id_i18next] = opt[id];
+                opt[id] = opt[id_i18next] ? i18next.sentence(opt[id_i18next]) : opt[id];
+            });
+            return tooltipFormatter.apply(this, arguments);
+        };
+    }(Highcharts.Point.prototype.tooltipFormatter);
+
+
+    /*********************************************************
+    Extend Point with method to rotate, show and hide its marker symbol
+    *********************************************************/
+    $.extend(Highcharts.Point.prototype, {
+        rotateMarker: function(angle){
+            if (!this.graphic || this.isRotated || (angle == undefined))
+                return;
+
+            var rad = angle * Math.PI / 180,
+                sin = Math.sin(rad),
+                cos = Math.cos(rad),
+                centerX = this.graphic.attr('imgwidth') / 2,
+                centerY = this.graphic.attr('imgheight') / 2,
+                newCenterX = centerX * cos - centerY * sin,
+                newCenterY = centerX * sin + centerY * cos;
+
+            this.graphic.attr({rotation: angle});
+
+            this.graphic.translate(-newCenterX, -newCenterY);
+
+            this.isRotated = true;
+
+            return this;
+        },
+
+        showMarker: function(){
+            if (this.graphic)
+                this.graphic.attr({display: 'block'});
+            return this;
+        },
+
+        hideMarker: function(){
+            if (this.graphic)
+                this.graphic.attr({display: 'none'});
+            return this;
+        }
+    });
+
+    //Rotate all marker in all charts when they load or reset
+    Highcharts.addEvent(Highcharts.Chart, 'render', function(event){
+        if (event.target.series)
+            event.target.series.forEach( series => {
+                if (series.visible && series.userOptions.directionArrow){
+                    var o = series.options,
+                        markerDim  = Math.max(o.directionMarker.width, o.directionMarker.height),
+                        xAxisWidth = series.xAxis.width,
+                        lastPlotX  = -10000, //lastPlotX = plotX of last visible marker. -10000 => First point allways get visible maker
+                        points = series.points || [];
+
+                    if (o.showAllArrows)
+                        points.forEach( point => {
+                            point.showMarker();
+                            point.rotateMarker(point.direction);
+                        });
+                    else
+                        points.forEach( point => {
+                            var plotX   = point.plotX;
+                            if ((plotX > 0) && (plotX < xAxisWidth) && (plotX - lastPlotX) > markerDim){
+                                point.rotateMarker(point.direction);
+                                point.showMarker();
+                                lastPlotX = plotX;
+                            }
+                            else {
+                                point.hideMarker();
+                                point.isRotated = false; //Force redraw next time
+                            }
+                        });
+                }
+            });
+    });
 
 
     /*********************************************************
@@ -275,9 +385,7 @@ Meteorogram: https://www.highcharts.com/demo/combo-meteogram#https://www.yr.no/p
 
         var chartOptions = {};
 
-        $.each(optionsList, function(index, opt){
-            chartOptions = $.extend(true, chartOptions, opt);
-         });
+        optionsList.forEach( opt => { chartOptions = $.extend(true, chartOptions, opt); });
         chartOptions = adjustOptionsFunc(chartOptions);
 
         //Create a inner-container inside container to allow resize-events on the container
@@ -291,11 +399,11 @@ Meteorogram: https://www.highcharts.com/demo/combo-meteogram#https://www.yr.no/p
         var chart = chartConstructor($innerContainer.get(0), chartOptions, callback);
 
         chart.$innerContainer = $innerContainer;
-        chart.$outerContainer = $(container);
+//1        chart.$outerContainer = $(container);
 
-        //Add events to update chart on container resize
-        chart._fcoo_onResize = $.proxy(chart_onResize, chart);
-        chart.$outerContainer.resize( chart._fcoo_onResize );
+//1        //Add events to update chart on container resize
+//1        chart._fcoo_onResize = chart_onResize.bind(chart);
+//1        chart.$outerContainer.resize( chart._fcoo_onResize );
 
         return chart;
     }
@@ -315,8 +423,9 @@ Meteorogram: https://www.highcharts.com/demo/combo-meteogram#https://www.yr.no/p
             function(opt){
                 //options.rangeSelector.buttons is allowed to be []STRING i format "X UNIT" ("3 day")
                 //UNIT = ms=millisecond, s=second, mi=minute, h=hour, d=day, w=week, M=month, y=year, ytd=ytd, and a=all (auto added)
-                if (opt.rangeSelector && opt.rangeSelector.enabled){
-                    $.each(opt.rangeSelector.buttons, function(index, buttonOptions){
+                if (opt.rangeSelector && opt.rangeSelector.enabled && opt.rangeSelector.buttons){
+
+                    opt.rangeSelector.buttons.forEach( (buttonOptions, index) => {
                         if ($.type(buttonOptions) == 'string'){
                             buttonOptions = buttonOptions.split(' ');
                             var count    = parseInt(buttonOptions[0]),
@@ -330,12 +439,12 @@ Meteorogram: https://www.highcharts.com/demo/combo-meteogram#https://www.yr.no/p
                             switch(typeCode) {
                                 case "ms": newOptions.text = {da: 'ms',  en:'ms' }; break;
                                 case "s" : newOptions.text = {da: 'sek', en:'sec'}; break;
-                                case "mi": newOptions.text = pluralist ? {da: 'min', en:'mins'   } : {da:'min', en:'min' }; break;
+                                case "mi": newOptions.text = pluralist ? {da: 'min',   en:'mins' } : {da:'min',  en:'min'  }; break;
                                 case "h" : newOptions.text = pluralist ? {da: 'timer', en:'hrs'  } : {da:'time', en:'hour' }; break;
                                 case "d" : newOptions.text = pluralist ? {da: 'dage',  en:'days' } : {da:'dag',  en:'day'  }; break;
                                 case "w" : newOptions.text = pluralist ? {da: 'uger',  en:'wks'  } : {da:'uge',  en:'week' }; break;
                                 case "m" : newOptions.text = pluralist ? {da: 'mdr',   en:'mths' } : {da:'mdr',  en:'mth'  }; break;
-                                case "y" : newOptions.text = pluralist ? {da: 'år',    en:'yr'   } : {da:'år',   en:'year' }; break;
+                                case "y" : newOptions.text = pluralist ? {da: 'år',    en:'yrs'  } : {da:'år',   en:'year' }; break;
                             }
 
                             $.each(newOptions.text, function(lang, text){
@@ -353,10 +462,12 @@ Meteorogram: https://www.highcharts.com/demo/combo-meteogram#https://www.yr.no/p
                 }
 
                 //Update serie-options with default
-                $.each(opt.series, function(index, serie){
-                    opt.series[index].dataGrouping = $.extend(true, {}, defaultDataGrouping, serie.dataGrouping || {});
-                });
-
+                if (opt.series){
+                    opt.series.forEach( (serie, index) => {
+                        //@todo Set color of series
+                        opt.series[index].dataGrouping = $.extend(true, {}, defaultDataGrouping, serie.dataGrouping || {});
+                    });
+                }
                 return opt;
             }
         );
@@ -433,11 +544,16 @@ Extend Parameter-object from fcoo-parameter-unit to interact with Highchart
             };
         },
 
-        //Set decimals on axis labels equal as parameter
+        //Set decimals on axis labels equal as parameter, but decimals = 0 if no labels has decimals
         hcOptions_axis_labels_formatter: function(){
             var valueFormat = this.decimals ? '0,0.' + '0'.repeat(this.decimals) : '0,0';
             return function(){
-                return window.numeral( this.value ).format( valueFormat );
+                let noDecimals = true;
+                this.axis.tickPositions.forEach( labelValue => {
+                    noDecimals = noDecimals && (labelValue % 1 === 0);
+                });
+
+                return window.numeral( this.value ).format( noDecimals ? '0,0' : valueFormat );
             };
         },
 
@@ -455,7 +571,7 @@ Extend Parameter-object from fcoo-parameter-unit to interact with Highchart
 /****************************************************************************
 time-series.js
 
-A time-series chart can by type 1: or 2:
+A time-series chart can by type 1:, 2:, or 2:
 
 1. Data from a single parameter from one location. Ea. sealevel at Drogden
 title       : Location name
@@ -472,7 +588,7 @@ plot-band   : optional. Get the band from a scale (to be coded)
 title       : Location-name
 sub-title   : none
 legend      : horizontal below title
-axis        : Each parameter get own y-axis in own color
+axis        : Each parameter get own y-axis in own color, or all axels in black and only one axis pr parametre
 
 ****************************************************************************/
 
@@ -528,57 +644,66 @@ axis        : Each parameter get own y-axis in own color
     See https://github.com/highcharts/highcharts/issues/13485
     Therefore a new tickPositioner-function is used to get
     better min-range implementation
-    If axis.minRange is set startOnTick and endOnTick is
-    also set = true (unless it was set specific to false)
 
-    2022-03-17:
-    A new and simpler version is implemented. The old version allowed data
-    outside the chart
+    2025-02-26:
+    Unknown if the issue has been solved in version 12
+    For now using default calculation
+    If axis.minRange is set startOnTick and endOnTick is
+    also set = false (changed from previous version)
     *********************************************************/
-    function axis_tickPositioner(/*min, max*/){
-        var dataRange = this.dataMax - this.dataMin;
+/*
+    function axis_afterSetExtremes(axis, event){
+        //NOT USED
+
+        if (this.fcooUpdating)
+            return;
+
+        let dataMin  = axis.dataMin,
+            dataMax  = axis.dataMax,
+            min      = axis.min,
+            max      = axis.max,
+            newMin   = min,
+            newMax   = max,
+            range    = max - min,
+            interval = this.tickInterval,
+            minRange = this.minRange;
+
+        if (range >= minRange)
+            return;
+
+        //Special case: 0-minRange cover data
+        if ((dataMin >= 0) && (dataMax <= minRange)){
+            newMin = 0;
+            newMax = minRange;
+        }
+        else {
+            //@todo
+        }
+        if ((newMin != min) || (newMax != max)){
+            this.fcooUpdating = true;
+            this.update({min: newMin, max: newMax}, true);
+            this.fcooUpdating = false;
+        }
+    }
+*/
+
+/*
+    function axis_tickPositioner(min, max){
+        //NOT USED
+        let dataRange = this.dataMax - this.dataMin;
+
         if (dataRange > this.options.minRange)
             return this.tickPositions;
 
-    /* Previous version
-        var dataCenter = this.dataMin + dataRange/2,
-            minRange = this.options.minRange,
-            maxValue = dataCenter + minRange/2,
-            minValue = dataCenter - minRange/2,
-            maxTickIndex = this.tickPositions.length,
-            maxTickDist = Infinity,
-            minTickIndex = 0,
-            minTickDist = Infinity;
 
-        $.each(this.tickPositions, function(index, tickValue){
-            var dist;
-            if (tickValue > dataCenter){
-                //Find tickIndex with lowest distance to maxValue
-                dist = Math.abs(tickValue - maxValue);
-                if (dist < maxTickDist){
-                    maxTickDist = dist;
-                    maxTickIndex = index;
-                }
-            }
-            else {
-                dist = Math.abs(tickValue - minValue);
-                if (dist < minTickDist){
-                    minTickDist = dist;
-                    minTickIndex = index;
-                }
-            }
-        });
-        */
-
-        //New version
-        var dataCenter   = this.dataMin + dataRange/2,
+        let dataCenter   = this.dataMin + dataRange/2,
             minRange     = this.options.minRange,
             maxValue     = dataCenter + minRange/2,
             minValue     = dataCenter - minRange/2,
             maxTickIndex = this.tickPositions.length,
             minTickIndex = 0;
 
-        $.each(this.tickPositions, function(index, tickValue){
+        this.tickPositions.forEach( (tickValue, index) => {
             if (tickValue > dataCenter){
                 if (maxValue <= tickValue)
                     maxTickIndex = index;
@@ -591,107 +716,8 @@ axis        : Each parameter get own y-axis in own color
 
         return this.tickPositions.slice(minTickIndex, maxTickIndex+1);
     }
+*/
 
-
-    /*********************************************************
-    Extend Point with method to format any value
-    *********************************************************/
-    Highcharts.Point.prototype.formatValue = function (value) {
-        var saveY = this.y;
-        this.y = value;
-        var result = this.tooltipFormatter('{point.y}');
-        this.y = saveY;
-        return result;
-    };
-
-    /****************************************************************************
-    Extend Point.tooltipFormatter to also translate other options
-    ****************************************************************************/
-    var translateSeriesOptions = ['nameInTooltip'];
-    Highcharts.Point.prototype.tooltipFormatter = function (tooltipFormatter) {
-        return function(){
-            var opt = this.series.options;
-            $.each(translateSeriesOptions, function(index, id){
-                var id_i18next = id+'i18next';
-                if (!opt[id]) return;
-
-                if ($.type(opt[id]) == "object")
-                    opt[id_i18next] = opt[id];
-                opt[id] = opt[id_i18next] ? i18next.sentence(opt[id_i18next]) : opt[id];
-            });
-            return tooltipFormatter.apply(this, arguments);
-        };
-    }(Highcharts.Point.prototype.tooltipFormatter);
-
-
-    /*********************************************************
-    Extend Point with method to rotate, show and hide its marker symbol
-    *********************************************************/
-    $.extend(Highcharts.Point.prototype, {
-        rotateMarker: function(angle){
-            if (!this.graphic || this.isRotated || (angle == undefined))
-                return;
-
-            var rad = angle * Math.PI / 180,
-                sin = Math.sin(rad),
-                cos = Math.cos(rad),
-                centerX = this.graphic.attr('imgwidth') / 2,
-                centerY = this.graphic.attr('imgheight') / 2,
-                newCenterX = centerX * cos - centerY * sin,
-                newCenterY = centerX * sin + centerY * cos;
-
-            this.graphic.attr({rotation: angle});
-
-            this.graphic.translate(-newCenterX, -newCenterY);
-
-            this.isRotated = true;
-
-            return this;
-        },
-
-        showMarker: function(){
-            if (this.graphic)
-                this.graphic.attr({display: 'block'});
-            return this;
-        },
-
-        hideMarker: function(){
-            if (this.graphic)
-                this.graphic.attr({display: 'none'});
-            return this;
-        }
-    });
-
-    //Rotate all marker in all charts when they load or reset
-    Highcharts.addEvent(Highcharts.Chart, 'render', function(event){
-        $.each(event.target.series, function(seriesIndex, series){
-            if (series.visible && series.userOptions.directionArrow){
-                var o = series.options,
-                    markerDim  = Math.max(o.directionMarker.width, o.directionMarker.height),
-                    xAxisWidth = series.xAxis.width,
-                    lastPlotX  = -10000; //lastPlotX = plotX of last visible marker. -10000 => First point allways get visible maker
-
-                if (o.showAllArrows)
-                    $.each(series.points, function(pointIndex, point){
-                        point.showMarker();
-                        point.rotateMarker(point.direction);
-                    });
-                else
-                    $.each(series.points, function(pointIndex, point){
-                        var plotX   = point.plotX;
-                        if ((plotX > 0) && (plotX < xAxisWidth) && (plotX - lastPlotX) > markerDim){
-                            point.rotateMarker(point.direction);
-                            point.showMarker();
-                            lastPlotX = plotX;
-                        }
-                        else {
-                            point.hideMarker();
-                            point.isRotated = false; //Force redraw next time
-                        }
-                    });
-            }
-        });
-    });
 
 
 
@@ -866,9 +892,7 @@ axis        : Each parameter get own y-axis in own color
             o.marker = marker;
 
             //Adjust pre- and postfix for tooltips
-            $.each(['tooltipPrefix', 'tooltipLabelPrefix', 'tooltipLabelPostfix', 'tooltipValuePrefix', 'tooltipValuePostfix', 'tooltipPostfix'], function(i, id){
-                o[id] = o[id] ? $._bsAdjustText(o[id]) : null;
-            });
+            ['tooltipPrefix', 'tooltipLabelPrefix', 'tooltipLabelPostfix', 'tooltipValuePrefix', 'tooltipValuePostfix', 'tooltipPostfix'].forEach( id => o[id] = o[id] ? $._bsAdjustText(o[id]) : null );
 
             return o;
         },
@@ -907,6 +931,8 @@ axis        : Each parameter get own y-axis in own color
             if (options.pointStart){
                 //Variation 1
                 var pointInterval = options.pointInterval;
+
+
                 if (pointInterval && (typeof pointInterval == 'string'))
                     pointInterval = moment.duration(pointInterval).milliseconds();
 
@@ -948,52 +974,60 @@ axis        : Each parameter get own y-axis in own color
             var directionArrow = this.options.directionArrow;
             if (this.parameter.type == 'vector'){
                 var dataList = seriesDataOptions.data;
-                $.each(dataList, function(index, singleDataSet){
-                    var timestep, singleData, speed, direction;
-                    if (typeof singleDataSet == 'number')
-                        return;
+                if (dataList)
+                    dataList.forEach( (singleDataSet, index) => {
+                        var timestep, singleData, speed, direction;
+                        if (typeof singleDataSet == 'number')
+                            return;
 
-                    if (seriesDataOptions.pointStart){
-                        // 1: Ok - singleDataSet is SINGLEDATA
-                        singleData = singleDataSet;
-                    }
-                    else
-                        //2:, 3:, 4: singleDataSet = [FLOAT, SINGLEDATA]
-                        if (Array.isArray(singleDataSet) && (singleDataSet.length == 2)){
-                            timestep   = singleDataSet[0];
-                            singleData = singleDataSet[1];
+                        if (seriesDataOptions.pointStart){
+                            // 1: Ok - singleDataSet is SINGLEDATA
+                            singleData = singleDataSet;
                         }
                         else
-                            //2:, 3:, 4: singleDataSet = {x:TIMESTAMP, y/speed: FLOAT, d/direction:FLOAT}
-                            if ($.isPlainObject(singleDataSet)){
-                                timestep   = singleDataSet.x;
-                                singleData = singleDataSet;
-
+                            //2:, 3:, 4: singleDataSet = [FLOAT, SINGLEDATA]
+                            if (Array.isArray(singleDataSet) && (singleDataSet.length == 2)){
+                                timestep   = singleDataSet[0];
+                                singleData = singleDataSet[1];
                             }
                             else
-                                return;
+                                //2:, 3:, 4: singleDataSet = {x:TIMESTAMP, y/speed: FLOAT, d/direction:FLOAT}
+                                if ($.isPlainObject(singleDataSet)){
+                                    timestep   = singleDataSet.x;
+                                    singleData = singleDataSet;
+                                }
+                                else
+                                    return;
 
-                    //singleData = [FLOAT, FLOAT] (speed, direction) or {y:FLOAT, d:FLOAT} or {y:FLOAT, direction:FLOAT} or {speed:FLOAT, direction:FLOAT}
-                    if (Array.isArray(singleData)){
-                        speed     = singleData[0];
-                        direction = singleData[1];
-                    }
-                    else {
-                        speed     = singleData.y !== undefined ? singleData.y : singleData.speed;
-                        direction = singleData.d !== undefined ? singleData.d : singleData.direction;
-                    }
+                        //singleData = [FLOAT, FLOAT] (speed, direction) or {y:FLOAT, d:FLOAT} or {y:FLOAT, direction:FLOAT} or {speed:FLOAT, direction:FLOAT}
+                        if (Array.isArray(singleData)){
+                            speed     = singleData[0];
+                            direction = singleData[1];
+                        }
+                        else {
+                            speed     = singleData.y !== undefined ? singleData.y : singleData.speed;
+                            direction = singleData.d !== undefined ? singleData.d : singleData.direction;
+                        }
 
-                    if ((speed !== undefined) && (direction !== undefined))
-                        dataList[index] = {
-                            x: timestep,
-                            y: speed,
-                            direction: directionArrow ? direction : undefined
-                        };
-                });
+                        if ((speed !== undefined) && (direction !== undefined))
+                            dataList[index] = {
+                                x: timestep,
+                                y: speed,
+                                direction: directionArrow ? direction : undefined
+                            };
+                    });
             }
 
-            //this.series is set in TimeSeries.createChart
-            this.series.update(seriesDataOptions, this.redraw);
+            //Update/sets options
+            ['pointStart', 'pointInterval', 'pointIntervalUnit'].forEach( id => {
+                let value = seriesDataOptions[id];
+                if (value != undefined)
+                    this.series.options[id] = value;
+            }, this);
+
+            //Update/sets data
+            this.series.setData(seriesDataOptions.data, this.redraw);
+
             this.redraw = true;
         }
     };
@@ -1008,10 +1042,14 @@ axis        : Each parameter get own y-axis in own color
         location    : []Location Or Location
         series      : SERIESOPTIONS or []SERIESOPTIONS or [](SERIESOPTIONS or []SERIESOPTIONS)
         chartOptions: JSON
+
+            shareYAxis  : BOOLEAN, false. If true series with same parameter using the same y-axis. If false every series gets it own y-axis
+
         finally     : function(timeSeries) (optional) Called when all data are loaded.
 
         zeroLine    : BOOLEAN (true). If true a thin horizontal line is drawn on y-axis value 0 in the same color as the series
         verticalLines: VERTICALLINE or []VERTICALLINE
+
     }
 
     VERTICALLINE = options for a vertical line at value (Number or MOMENT)
@@ -1032,11 +1070,14 @@ axis        : Each parameter get own y-axis in own color
         this.chartConstructor = nsHC.chart;
         this.options = $.extend(true, {}, {
             //Default options
-            zeroLine: true,
-            verticalLines: []
-
+            zeroLine            : true,
+            verticalLines       : [],
+            shareYAxis          : true,
+            parameterMinRange   : {},
+            parameterFixedRange : {}
         },
         options);
+
         this.finally = options.finally || function(){};
 
         //Create this.parameter = [9Parameter and this.zList = []STRING/NULL
@@ -1053,11 +1094,28 @@ axis        : Each parameter get own y-axis in own color
                 this.zList.push(optionsZ);
 
         }, this);
+
+
+        this.parameterMinRange   = {};
+        this.parameterFixedRange = {};
+        this.parameter.forEach( param => {
+            //Getting the minRange and fixedRange (if any) from the charts options, the parameter or the parameter speed-parameter (if any)
+            const pId        = param.id,
+                  speedParam = param.speed_direction && param.speed_direction.length ? param.speed_direction[0] : param,
+                  speedId    = speedParam.id;
+
+            this.parameterMinRange[pId]       = this.options.parameterMinRange[pId]   || param.minRange   || speedParam.minRange   || null;
+            this.parameterFixedRange[pId]     = this.options.parameterFixedRange[pId] || param.FixedRange || speedParam.FixedRange || null;
+            this.parameterMinRange[speedId]   = this.parameterMinRange[pId];
+            this.parameterFixedRange[speedId] = this.parameterFixedRange[pId];
+        }, this);
+
         this.multiParameter = this.parameter.length > 1;
 
         this.yAxis = this.options.yAxis || this.options.axis || {};
         this.yAxis = Array.isArray(this.yAxis) ? this.yAxis : [this.yAxis];
 
+        //Adjust the unit of the parametrers if any given
         var unitList = options.unit ? (Array.isArray(options.unit) ? options.unit : [options.unit]) : [];
         this.parameter.forEach( (param, index) => {
             if (unitList.length > index){
@@ -1132,7 +1190,7 @@ axis        : Each parameter get own y-axis in own color
                 marker    : true,
                 lineWidth : 2,
                 dashStyle : 'Solid',
-                noTooltip : false
+                noTooltip : false,
             }, options);
 
             //Create the SingleTimeSeries
@@ -1163,8 +1221,8 @@ axis        : Each parameter get own y-axis in own color
         ************************************************/
         _tooltip_get_fix: function(point){
             var result = {};
-            $.each(['Prefix', 'Postfix'], function(index, position){
-                $.each(['', 'Label', 'Value'], function(index2, subId){
+            ['Prefix', 'Postfix'].forEach( position => {
+                ['', 'Label', 'Value'].forEach( subId => {
                     var id = 'tooltip' + subId + position,
                         value = point.series.options[id];
                     result[id] = value ? i18next.s(value) : '';
@@ -1293,7 +1351,7 @@ axis        : Each parameter get own y-axis in own color
             //Set vertical line
             var plotLines = [],
                 verLineList = this.options.verticalLines || [];
-            $.each( Array.isArray(verLineList) ? verLineList : [verLineList], function(index, lineOptions){
+            ( Array.isArray(verLineList) ? verLineList : [verLineList]).forEach( lineOptions => {
                 lineOptions = $.extend(true, {}, {
                     width    : 1,
                     color    : 'black',
@@ -1325,18 +1383,13 @@ axis        : Each parameter get own y-axis in own color
                 this.set('tooltip.borderRadius', 8);
 
                 this.set('tooltip.headerFormat', '<span class="chart-tooltip-time">{point.key}</span><table class="chart-tooltip-table">');
-                if (this.singleSingle && !this.options.alwaysShowParameter){
+                if (this.singleSingle && !this.options.alwaysShowParameter)
                     //Single location and paramater
-                    this.set('tooltip.pointFormatter', function(){
-                        return _this._tooltip_pointFormatter_single.call(this, _this);
-                    });
-                }
-                else {
+                    this.set('tooltip.pointFormatter', function(){ return _this._tooltip_pointFormatter_single.call(this, _this); });
+                else
                     //Display multi paramater or location in a table to have correct align
-                    this.set('tooltip.pointFormatter', function(){
-                        return _this._tooltip_pointFormatter_multi.call(this, _this);
-                    });
-                }
+                    this.set('tooltip.pointFormatter', function(){ return _this._tooltip_pointFormatter_multi.call(this, _this); });
+
                 this.set('tooltip.footerFormat', '</table>');
 
                 if (!this.allHaveTooltip){
@@ -1345,7 +1398,7 @@ axis        : Each parameter get own y-axis in own color
                         var points = this.point ? [this.point] : this.points || [],
                             showTooltip = false;
 
-                        $.each(points, function(index, point){
+                        points.forEach( point => {
                             if (!point.series.options.noTooltip){
                                 showTooltip = true;
                                 return true;
@@ -1358,14 +1411,17 @@ axis        : Each parameter get own y-axis in own color
 
             //y-axis - if one parameter => no text on axis
             chartOptions.yAxis = [];
-            var seriesAxisIndex = [], nextAxis;
+            let nextAxis;
 
             if ((this.multiLocation || this.singleSingle) && !this.options.alwaysShowParameter){
                 nextAxis = {
-                    crosshair   : true,
-                    opposite    : false,
-                    labels      : this.parameter[0].hcOptions_axis_labels(),
-                    title       : {enabled: false}
+                    id           : 'ALL',
+                    parameterId  : this.parameter[0].id,
+                    originalIndex: 0,
+                    crosshair    : true,
+                    opposite     : false,
+                    labels       : this.parameter[0].hcOptions_axis_labels(),
+                    title        : {enabled: false}
                 };
 
                 if (this.parameter[0].negative && this.options.zeroLine)
@@ -1380,32 +1436,55 @@ axis        : Each parameter get own y-axis in own color
                 chartOptions.yAxis.push( nextAxis );
 
                 //All series use the same axis
-                seriesAxisIndex = Array(this.location.length).fill(0);
+                this.series.forEach( series => series.yAxisId = 'ALL' );
+
             }
             else {
-                //The y-axis for multi-parameter is added in a order to have the y-axis in the same order (left to rigth) as the series legned
-                //The first half of the y-axis is palced to the left but added in revers order to have the first series axis to the left
-                //The rest of the axis are added on the right side
-                //Eg. 5 y-axis (0-4) must be added in the order 2,1,0,3,4 to have position 0 1 2 chart 3 4
-                var leftAxisIndex = Math.floor(this.parameter.length / 2);
-                for (var i=0; i<this.parameter.length; i++)
-                    if (i <= leftAxisIndex)
-                        seriesAxisIndex.unshift(i);
-                    else
-                        seriesAxisIndex.push(i);
+                let shareYAxis = !!this.options.shareYAxis;
+
+                this.parameter.forEach( param => param.yAxisId = '' );
+
+                //If shareYAxis => check if there are multi series with same parameter
+                if (shareYAxis){
+                    shareYAxis = false;
+                    this.parameter.forEach( param => {
+                        if (param.isUniqueParameter)
+                            shareYAxis = true;
+                        else
+                            param.isUniqueParameter = true;
+                    });
+                    this.parameter.forEach( param => delete param.isUniqueParameter );
+                }
+
+                //Create all the yAxis needed
+                let yAxisIds = {}; //{id}YAXIS-OPTIONS
 
                 this.parameter.forEach( (parameter, index) => {
-                    var color = this.series[index].getChartOptions().color,
+                    let yAxisId = parameter.id + (shareYAxis ? '' : index);
+                    this.series[index].yAxisId = yAxisId;
+
+                    if (yAxisIds[yAxisId]){
+                        //It is a joint y-axis => color = black
+                        yAxisIds[yAxisId].title.style.color = 'black';
+                        return;
+                    }
+
+                    let color = this.series[index].getChartOptions().color,
                         style = {color: color},
                         z = this.zList[index];
 
                     nextAxis = {
+                        id           : yAxisId,
+                        parameterId  : parameter.id,
+                        originalIndex: index,
+
                         lineColor: color,
                         lineWidth: 1,
 
-                        opposite: index > leftAxisIndex,
                         title: {
-                            text: parameter.decodeGetName(true, true, this.singleSingle && z ? z : false),
+                            text: parameter.id,
+                            __text: index+' '+parameter.decodeGetName(true, true, this.singleSingle && z ? z : false).da,
+                            _text: parameter.decodeGetName(true, true, this.singleSingle && z ? z : false),
                             style: style
                         },
                         showEmpty: false,   //=> Remove both axis and title when serie is unselected
@@ -1425,28 +1504,74 @@ axis        : Each parameter get own y-axis in own color
                     if (!parameter.negative)
                         nextAxis.min = 0;
 
-                    //Replace the index-number in yAxis with the axis-options
-                    chartOptions.yAxis[ seriesAxisIndex[index] ] = nextAxis;
+                    yAxisIds[yAxisId] = nextAxis;
+
                 }, this);
+
+                let yAxis = [];
+                $.each(yAxisIds, (id, yAxisOptions) => yAxis.push( yAxisOptions ) );
+
+                //The y-axis for multi-parameter is added in a order to have the y-axis in the same order (left to rigth) as the series legned
+                //The first half of the y-axis is palced to the left but added in revers order to have the first series axis to the left
+                //The rest of the axis are added on the right side
+                yAxis.sort( (a1, a2) => { return a1.originalIndex - a2.originalIndex; } );
+                const halfLength = Math.ceil(yAxis.length / 2);
+                yAxis.forEach( (yAxis, index) => yAxis.opposite = (index >= halfLength) );
+
+                chartOptions.yAxis = yAxis;
             }
 
             //Update yAxis with other options
-            $.each(this.yAxis, function(index, options){
-                if (index < chartOptions.yAxis.length)
-                    chartOptions.yAxis[ seriesAxisIndex[index] ] = $.extend(true, chartOptions.yAxis[seriesAxisIndex[index]], options);
+            /* @todo
+            let addEvent = ( originalEvent, newEvent ) => {
+                    if (originalEvent)
+                        return function( _originalEvent ){
+                            return function(){
+                                _originalEvent.apply(this, arguments);
+                                return newEvent.apply(this, arguments);
+                            };
+                        }(originalEvent);
+                    else
+                        return newEvent;
+                };
+            */
+            let setOption = ( originalValue, newValue ) => {
+                    return originalValue === undefined ? newValue : originalValue;
+                };
+
+            this.yAxis.forEach( (options, index) => {
+                chartOptions.yAxis.forEach( (yAxis, cIndex) => {
+                    if (yAxis.originalIndex == index)
+                        chartOptions.yAxis[cIndex] = $.extend(true, yAxis, options);
+                });
             });
 
 
             //Update all yAxis with default options
-            $.each(chartOptions.yAxis, function(index, options){
-                //Set the options needed to get a better minRange.
-                //See function axis_tickPositioner at the top
-                if (options.minRange){
-                    options.startOnTick = options.startOnTick === undefined ? true : options.startOnTick;
-                    options.endOnTick   = options.endOnTick   === undefined ? true : options.endOnTick;
-                    options.tickPositioner = options.tickPositioner || axis_tickPositioner;
+            chartOptions.yAxis.forEach( options => {
+                //@todo: Set the options needed to get a better minRange.
+                //@todo: See function axis_tickPositioner at the top
+
+                options.minRange   = options.minRange   || this.parameterMinRange[options.parameterId];
+                options.fixedRange = options.fixedRange || this.parameterFixedRange[options.parameterId];
+
+                if (options.fixedRange){
+                    options.min         = options.fixedRange[0];
+                    options.max         = options.fixedRange[1];
+                    options.startOnTick = setOption( options.startOnTick, false );
+                    options.endOnTick   = setOption( options.endOnTick,   false );
+                    options.minRange    = null;
                 }
-            });
+
+                if (options.minRange){
+                    options.startOnTick             = setOption( options.startOnTick, false  );
+                    options.endOnTick               = setOption( options.endOnTick,   false  );
+                    //options.tickPositioner          = addEvent( options.tickPositioner, axis_tickPositioner);
+                    //options.events                  = options.events || {};
+                    //options.events.afterSetExtremes = addEvent( options.events.afterSetExtremes, axis_afterSetExtremes);
+                }
+            }, this);
+
 
             //Name of series
             chartOptions.series = [];
@@ -1456,32 +1581,31 @@ axis        : Each parameter get own y-axis in own color
                     chartOptions.series.push({
                         name         : parameter.decodeGetName(true, false, z),
                         nameInTooltip: parameter.decodeGetName(false, false/*true*/, z), //<- Changed 2021-06-10 to show vector-name instead of speed-name
-                        yAxis        : seriesAxisIndex[index],
+                        yAxis        : this.series[index].yAxisId,
                         tooltip      : parameter.hcOptions_series_tooltip('', z)
                     });
                 }, this);
-            else {
-                $.each(this.locationName, function(index, location){
-                    chartOptions.series.push({name: location});
-                });
-            }
+            else
+                if (this.locationName)
+                    this.locationName.forEach( location => chartOptions.series.push({name: location}) );
 
             //Set style and id for the added series
-            $.each(chartOptions.series, function(index, seriesOptions){
-                chartOptions.series[index] = $.extend(true, seriesOptions, _this.series[index].getChartOptions());
+            chartOptions.series.forEach( (seriesOptions, index) => {
+                chartOptions.series[index] = $.extend(true, seriesOptions, this.series[index].getChartOptions());
                 chartOptions.series[index].id =  'fcoo_series_' + index;
-            });
+            }, this);
 
             //Add sub series
-            $.each(this.subSeries, function(subSeriesIndex, singleTimeSeries/*opt*/){
-                //seriesOptions = options for the new sub series = copy of the series it is sub to
-                var seriesOptions = $.extend(true, {}, chartOptions.series[singleTimeSeries.index]);
-                seriesOptions.id = 'fcoo_series_' + chartOptions.series.length;
-                seriesOptions.linkedTo = 'fcoo_series_' + singleTimeSeries.index;
+            if (this.subSeries)
+                this.subSeries.forEach( singleTimeSeries => {
+                    //seriesOptions = options for the new sub series = copy of the series it is sub to
+                    var seriesOptions = $.extend(true, {}, chartOptions.series[singleTimeSeries.index]);
+                    seriesOptions.id = 'fcoo_series_' + chartOptions.series.length;
+                    seriesOptions.linkedTo = 'fcoo_series_' + singleTimeSeries.index;
 
-                seriesOptions = $.extend(true, seriesOptions, singleTimeSeries.getChartOptions());
-                chartOptions.series.push(seriesOptions);
-            });
+                    seriesOptions = $.extend(true, seriesOptions, singleTimeSeries.getChartOptions());
+                    chartOptions.series.push(seriesOptions);
+                });
 
             /*
             If the series has direction arrows AND showLegendArrow = false
@@ -1490,16 +1614,17 @@ axis        : Each parameter get own y-axis in own color
             in Highchart to control this nor any (known) css-classes to alter
             */
             var anySeriesNeedToHideArrow = false;
-            $.each(this.series, function(index, singleTimeSeries){
-                if (singleTimeSeries.options.directionArrow && !singleTimeSeries.options.showLegendArrow){
-                    anySeriesNeedToHideArrow = true;
-                    singleTimeSeries.options.hideLegendArrow = true;
-                }
-            });
+            if (this.series)
+                this.series.forEach( singleTimeSeries => {
+                    if (singleTimeSeries.options.directionArrow && !singleTimeSeries.options.showLegendArrow){
+                        anySeriesNeedToHideArrow = true;
+                        singleTimeSeries.options.hideLegendArrow = true;
+                    }
+                });
 
             if (anySeriesNeedToHideArrow)
                 this.set('chart.events.render', function(){
-                    $.each(_this.series, function(index, singleTimeSeries){
+                    this.series.forEach( singleTimeSeries => {
                         if (
                             singleTimeSeries.options.hideLegendArrow &&
                             singleTimeSeries.series &&
@@ -1508,7 +1633,7 @@ axis        : Each parameter get own y-axis in own color
                         )
                             singleTimeSeries.series.legendSymbol.element.style.display = 'none';
                     });
-                });
+                }.bind(this));
 
 
             /****************************************
@@ -1520,29 +1645,33 @@ axis        : Each parameter get own y-axis in own color
             //Load data
             chart.promiseList = new window.PromiseList({
                 finish: function(){
-                    _this.finally(_this);
+
+                    this.finally(this);
 
                     chart.redraw(false);
 
-                    _this._finally();
+                    this._finally();
 
-                }
+                }.bind(this)
             });
 
             //Link Series and SingleTimeSeries
-            $.each(this.series, function(index, singleTimeSeries){
-                singleTimeSeries.series = chart.series[index];
-                singleTimeSeries.series.userOptions.singleTimeSeries = singleTimeSeries;
+            if (this.series)
+                this.series.forEach( (singleTimeSeries, index) => {
+                    singleTimeSeries.series = chart.series[index];
+                    singleTimeSeries.series.userOptions.singleTimeSeries = singleTimeSeries;
 
-                chart.promiseList.append( singleTimeSeries.promiseListOptions() );
-            });
+                    chart.promiseList.append( singleTimeSeries.promiseListOptions() );
+                });
+
             var thisSeriesLength = this.series.length;
-            $.each(this.subSeries, function(index, singleTimeSeries){
-                singleTimeSeries.series = chart.series[thisSeriesLength + index];
-                singleTimeSeries.series.userOptions.singleTimeSeries = singleTimeSeries;
+            if (this.subSeries)
+                this.subSeries.forEach( (singleTimeSeries, index) => {
+                    singleTimeSeries.series = chart.series[thisSeriesLength + index];
+                    singleTimeSeries.series.userOptions.singleTimeSeries = singleTimeSeries;
 
-                chart.promiseList.append( singleTimeSeries.promiseListOptions() );
-            });
+                    chart.promiseList.append( singleTimeSeries.promiseListOptions() );
+                });
             chart.promiseList.promiseAll();
             return chart;
         },
@@ -1682,14 +1811,17 @@ axis        : Each parameter get own y-axis in own color
         Calc stat for the point
         **********************************************/
         valueFormatter: function(point){
-            var dataGroup = point.dataGroup,
-                series = point.series,
-                group = dataGroup ?
-                            series.yData.slice(
-                                dataGroup.start,
-                                dataGroup.start + dataGroup.length
-                            ).sort( function(a,b){ return a-b; } ) :
-                        [point.y];
+            let dataGroup = point.dataGroup,
+                dataTable = point.series.dataTable,
+                group     = [];
+
+            if (dataGroup){
+                for (var i=dataGroup.start; i<dataGroup.start + dataGroup.length; i++)
+                    group.push(dataTable.getRow(i)[1]);
+                group.sort( function(a,b){ return a-b; } );
+            }
+            else
+                group = [point.y];
 
             //Remove null-values
             group = group.filter(function(value) { return value != null; });

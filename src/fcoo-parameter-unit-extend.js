@@ -67,11 +67,16 @@ Extend Parameter-object from fcoo-parameter-unit to interact with Highchart
             };
         },
 
-        //Set decimals on axis labels equal as parameter
+        //Set decimals on axis labels equal as parameter, but decimals = 0 if no labels has decimals
         hcOptions_axis_labels_formatter: function(){
             var valueFormat = this.decimals ? '0,0.' + '0'.repeat(this.decimals) : '0,0';
             return function(){
-                return window.numeral( this.value ).format( valueFormat );
+                let noDecimals = true;
+                this.axis.tickPositions.forEach( labelValue => {
+                    noDecimals = noDecimals && (labelValue % 1 === 0);
+                });
+
+                return window.numeral( this.value ).format( noDecimals ? '0,0' : valueFormat );
             };
         },
 

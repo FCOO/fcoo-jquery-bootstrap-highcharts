@@ -22,6 +22,12 @@ Meteorogram: https://www.highcharts.com/demo/combo-meteogram#https://www.yr.no/p
 
 ****************************************************************************/
 
+
+/****************************************************************************
+Version 5 changes
+1: Removed resize-event
+
+****************************************************************************/
 (function ($, Highcharts, i18next, moment, window/*, document, undefined*/) {
 	"use strict";
 
@@ -109,7 +115,7 @@ Meteorogram: https://www.highcharts.com/demo/combo-meteogram#https://www.yr.no/p
     /*********************************************************
     Set default FCOO options for chart and stockChart
     *********************************************************/
-    var defaultChartOptions = {
+    let defaultChartOptions = {
             /*  alignTicks: boolean
                 When using multiple axis, the ticks of two or more opposite axes will automatically be aligned by adding ticks to the axis or axes with the least ticks, as if tickAmount were specified.
 
@@ -168,11 +174,11 @@ Meteorogram: https://www.highcharts.com/demo/combo-meteogram#https://www.yr.no/p
         defaultStockChartOptions = {
             plotOptions: {
                 series: {
-                    showInNavigator: true
+                    showInNavigator: true,
                 }
             },
 
-            rangeSelector: {
+            rangefSelector: {
                 enabled : true,
                 dropdown: 'responsive',
 
@@ -181,7 +187,7 @@ Meteorogram: https://www.highcharts.com/demo/combo-meteogram#https://www.yr.no/p
                 inputEditDateFormat : "%d %m %Y",
 
                 buttonTheme   : {width: 48},
-                buttonPosition: {align: 'middle'},
+                buttonPosition: {align: 'left'},
 
                 buttons : ['3 d', '1 w', '1 m', '6 m', '1 y'],
                 selected: 3,
@@ -227,12 +233,13 @@ Meteorogram: https://www.highcharts.com/demo/combo-meteogram#https://www.yr.no/p
     Save the current dim of the container and set a timeout to
     check if the dim is changed => the chart has redrawn itself
     *********************************************************/
+/* 1:
     function chart_onResize(){
         this._save_containerWidth = this.containerWidth;
         this._save_containerHeight = this.containerHeight;
 
         window.clearTimeout(this._resize_timeout_id);
-        this._resize_timeout_id = window.setTimeout( $.proxy( function(){
+        this._resize_timeout_id = window.setTimeout( function(){
             if (
                     ( Math.round(this.$outerContainer.width()  ) != Math.round(this.containerWidth ) ) ||
                     ( Math.round(this.$outerContainer.height() ) != Math.round(this.containerHeight) )
@@ -240,16 +247,16 @@ Meteorogram: https://www.highcharts.com/demo/combo-meteogram#https://www.yr.no/p
                 //The outer-container has resized but the chart has not
                 this.reflow();
             }
-        }, this), 100);
+        }.bind(this), 100);
     }
-
+*/
     /*********************************************************
     Extend Chart.destroy to also remove resize-event from is container
     *********************************************************/
     Highcharts.Chart.prototype.destroy = function (Chart_destroy) {
         return function(){
-            if (this.$outerContainer && this._fcoo_onResize)
-                this.$outerContainer.removeResize(this._fcoo_onResize);
+//1            if (this.$outerContainer && this._fcoo_onResize)
+//1                this.$outerContainer.removeResize(this._fcoo_onResize);
 
             var $innerContainer = this.$innerContainer,
                 result = Chart_destroy.apply(this, arguments);
@@ -260,6 +267,109 @@ Meteorogram: https://www.highcharts.com/demo/combo-meteogram#https://www.yr.no/p
             return result;
         };
     }(Highcharts.Chart.prototype.destroy);
+
+
+    /*********************************************************
+    Extend Point with method to format any value
+    *********************************************************/
+    Highcharts.Point.prototype.formatValue = function (value) {
+        var saveY = this.y;
+        this.y = value;
+        var result = this.tooltipFormatter('{point.y}');
+        this.y = saveY;
+        return result;
+    };
+
+    /****************************************************************************
+    Extend Point.tooltipFormatter to also translate other options
+    ****************************************************************************/
+    var translateSeriesOptions = ['nameInTooltip'];
+    Highcharts.Point.prototype.tooltipFormatter = function (tooltipFormatter) {
+        return function(){
+            var opt = this.series.options;
+            translateSeriesOptions.forEach( id => {
+                var id_i18next = id+'i18next';
+                if (!opt[id]) return;
+
+                if ($.type(opt[id]) == "object")
+                    opt[id_i18next] = opt[id];
+                opt[id] = opt[id_i18next] ? i18next.sentence(opt[id_i18next]) : opt[id];
+            });
+            return tooltipFormatter.apply(this, arguments);
+        };
+    }(Highcharts.Point.prototype.tooltipFormatter);
+
+
+    /*********************************************************
+    Extend Point with method to rotate, show and hide its marker symbol
+    *********************************************************/
+    $.extend(Highcharts.Point.prototype, {
+        rotateMarker: function(angle){
+            if (!this.graphic || this.isRotated || (angle == undefined))
+                return;
+
+            var rad = angle * Math.PI / 180,
+                sin = Math.sin(rad),
+                cos = Math.cos(rad),
+                centerX = this.graphic.attr('imgwidth') / 2,
+                centerY = this.graphic.attr('imgheight') / 2,
+                newCenterX = centerX * cos - centerY * sin,
+                newCenterY = centerX * sin + centerY * cos;
+
+            this.graphic.attr({rotation: angle});
+
+            this.graphic.translate(-newCenterX, -newCenterY);
+
+            this.isRotated = true;
+
+            return this;
+        },
+
+        showMarker: function(){
+            if (this.graphic)
+                this.graphic.attr({display: 'block'});
+            return this;
+        },
+
+        hideMarker: function(){
+            if (this.graphic)
+                this.graphic.attr({display: 'none'});
+            return this;
+        }
+    });
+
+    //Rotate all marker in all charts when they load or reset
+    Highcharts.addEvent(Highcharts.Chart, 'render', function(event){
+        if (event.target.series)
+            event.target.series.forEach( series => {
+                if (series.visible && series.userOptions.directionArrow){
+                    var o = series.options,
+                        markerDim  = Math.max(o.directionMarker.width, o.directionMarker.height),
+                        xAxisWidth = series.xAxis.width,
+                        lastPlotX  = -10000, //lastPlotX = plotX of last visible marker. -10000 => First point allways get visible maker
+                        points = series.points || [];
+
+                    if (o.showAllArrows)
+                        points.forEach( point => {
+                            point.showMarker();
+                            point.rotateMarker(point.direction);
+                        });
+                    else
+                        points.forEach( point => {
+                            var plotX   = point.plotX;
+                            if ((plotX > 0) && (plotX < xAxisWidth) && (plotX - lastPlotX) > markerDim){
+                                point.rotateMarker(point.direction);
+                                point.showMarker();
+                                lastPlotX = plotX;
+                            }
+                            else {
+                                point.hideMarker();
+                                point.isRotated = false; //Force redraw next time
+                            }
+                        });
+                }
+            });
+    });
 
 
     /*********************************************************
@@ -275,9 +385,7 @@ Meteorogram: https://www.highcharts.com/demo/combo-meteogram#https://www.yr.no/p
 
         var chartOptions = {};
 
-        $.each(optionsList, function(index, opt){
-            chartOptions = $.extend(true, chartOptions, opt);
-         });
+        optionsList.forEach( opt => { chartOptions = $.extend(true, chartOptions, opt); });
         chartOptions = adjustOptionsFunc(chartOptions);
 
         //Create a inner-container inside container to allow resize-events on the container
@@ -291,11 +399,11 @@ Meteorogram: https://www.highcharts.com/demo/combo-meteogram#https://www.yr.no/p
         var chart = chartConstructor($innerContainer.get(0), chartOptions, callback);
 
         chart.$innerContainer = $innerContainer;
-        chart.$outerContainer = $(container);
+//1        chart.$outerContainer = $(container);
 
-        //Add events to update chart on container resize
-        chart._fcoo_onResize = $.proxy(chart_onResize, chart);
-        chart.$outerContainer.resize( chart._fcoo_onResize );
+//1        //Add events to update chart on container resize
+//1        chart._fcoo_onResize = chart_onResize.bind(chart);
+//1        chart.$outerContainer.resize( chart._fcoo_onResize );
 
         return chart;
     }
@@ -315,8 +423,9 @@ Meteorogram: https://www.highcharts.com/demo/combo-meteogram#https://www.yr.no/p
             function(opt){
                 //options.rangeSelector.buttons is allowed to be []STRING i format "X UNIT" ("3 day")
                 //UNIT = ms=millisecond, s=second, mi=minute, h=hour, d=day, w=week, M=month, y=year, ytd=ytd, and a=all (auto added)
-                if (opt.rangeSelector && opt.rangeSelector.enabled){
-                    $.each(opt.rangeSelector.buttons, function(index, buttonOptions){
+                if (opt.rangeSelector && opt.rangeSelector.enabled && opt.rangeSelector.buttons){
+
+                    opt.rangeSelector.buttons.forEach( (buttonOptions, index) => {
                         if ($.type(buttonOptions) == 'string'){
                             buttonOptions = buttonOptions.split(' ');
                             var count    = parseInt(buttonOptions[0]),
@@ -330,12 +439,12 @@ Meteorogram: https://www.highcharts.com/demo/combo-meteogram#https://www.yr.no/p
                             switch(typeCode) {
                                 case "ms": newOptions.text = {da: 'ms',  en:'ms' }; break;
                                 case "s" : newOptions.text = {da: 'sek', en:'sec'}; break;
-                                case "mi": newOptions.text = pluralist ? {da: 'min', en:'mins'   } : {da:'min', en:'min' }; break;
+                                case "mi": newOptions.text = pluralist ? {da: 'min',   en:'mins' } : {da:'min',  en:'min'  }; break;
                                 case "h" : newOptions.text = pluralist ? {da: 'timer', en:'hrs'  } : {da:'time', en:'hour' }; break;
                                 case "d" : newOptions.text = pluralist ? {da: 'dage',  en:'days' } : {da:'dag',  en:'day'  }; break;
                                 case "w" : newOptions.text = pluralist ? {da: 'uger',  en:'wks'  } : {da:'uge',  en:'week' }; break;
                                 case "m" : newOptions.text = pluralist ? {da: 'mdr',   en:'mths' } : {da:'mdr',  en:'mth'  }; break;
-                                case "y" : newOptions.text = pluralist ? {da: 'år',    en:'yr'   } : {da:'år',   en:'year' }; break;
+                                case "y" : newOptions.text = pluralist ? {da: 'år',    en:'yrs'  } : {da:'år',   en:'year' }; break;
                             }
 
                             $.each(newOptions.text, function(lang, text){
@@ -353,10 +462,12 @@ Meteorogram: https://www.highcharts.com/demo/combo-meteogram#https://www.yr.no/p
                 }
 
                 //Update serie-options with default
-                $.each(opt.series, function(index, serie){
-                    opt.series[index].dataGrouping = $.extend(true, {}, defaultDataGrouping, serie.dataGrouping || {});
-                });
-
+                if (opt.series){
+                    opt.series.forEach( (serie, index) => {
+                        //@todo Set color of series
+                        opt.series[index].dataGrouping = $.extend(true, {}, defaultDataGrouping, serie.dataGrouping || {});
+                    });
+                }
                 return opt;
             }
         );
