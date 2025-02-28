@@ -58,7 +58,7 @@ Extend Parameter-object from fcoo-parameter-unit to interact with Highchart
             };
         },
 
-        //tooltip for single serie
+        //tooltip for single series
         hcOptions_series_tooltip: function(valuePrefix = '', z){
             return {
                 valueDecimals: this.decimals,

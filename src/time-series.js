@@ -20,6 +20,19 @@ sub-title   : none
 legend      : horizontal below title
 axis        : Each parameter get own y-axis in own color, or all axels in black and only one axis pr parametre
 
+
+There are tree possible ways to adjust/fix the range of the y-axis for a given parameter.
+
+They can be set in the options for the series as fixedRange: [NUMBER, NUMBER], minRange: NUMBER, or semiFixedRange: [NUMBER, NUMBER]/{min:NUMBER, range:NUMBER}, or
+in the options for the time-series as parameterFixedRange: {PARAMETER-ID}[NUMBER, NUMBER], parameterMinRange: {PARAMETER-ID}NUMBER, or parameterSemiFixedRange: {PARAMETER-ID}[NUMBER, NUMBER]/{min:NUMBER, range:NUMBER}
+
+fixedRange      : [from, to] Sets the range to from - to regardles of the data-range
+minRange        : NUMBER = Standard Highchart minRange options for yAxis
+semiFixedRange  : [min, range] or {min:NUMBER, range:NUMBER}. Set min-range = range but also fixed the min-value at min
+
+fixedRange, minRange, semiFixedRange can also be set in the Parameter-object (fcoo-parameter-unit)
+
+
 ****************************************************************************/
 
 (function ($, Highcharts, i18next, moment, window, document, undefined) {
@@ -81,50 +94,31 @@ axis        : Each parameter get own y-axis in own color, or all axels in black 
     If axis.minRange is set startOnTick and endOnTick is
     also set = false (changed from previous version)
     *********************************************************/
-/*
-    function axis_afterSetExtremes(axis, event){
-        //NOT USED
 
-        if (this.fcooUpdating)
-            return;
-
-        let dataMin  = axis.dataMin,
-            dataMax  = axis.dataMax,
-            min      = axis.min,
-            max      = axis.max,
-            newMin   = min,
-            newMax   = max,
-            range    = max - min,
-            interval = this.tickInterval,
-            minRange = this.minRange;
-
-        if (range >= minRange)
-            return;
-
-        //Special case: 0-minRange cover data
-        if ((dataMin >= 0) && (dataMax <= minRange)){
-            newMin = 0;
-            newMax = minRange;
-        }
-        else {
-            //@todo
-        }
-        if ((newMin != min) || (newMax != max)){
-            this.fcooUpdating = true;
-            this.update({min: newMin, max: newMax}, true);
-            this.fcooUpdating = false;
-        }
+    /*********************************************************
+    axis_tickPositioner_fixedRange
+    Adjust the tick with labels for axis with fixed range
+    Adds min, max and zero (if the are missing)
+    *********************************************************/
+    function axis_tickPositioner_fixedRange(min, max){
+        let result = [0,min,max];
+        this.tickPositions.forEach( tickValue => {
+            if (tickValue && (tickValue > min) && (tickValue < max))
+                result.push(tickValue);
+        });
+        result.sort();
+        return result;
     }
-*/
 
-/*
-    function axis_tickPositioner(min, max){
-        //NOT USED
+
+    function axis_tickPositioner(/*min, max*/){
+        return this.tickPositions;
+
+/*NOT USED
         let dataRange = this.dataMax - this.dataMin;
 
         if (dataRange > this.options.minRange)
             return this.tickPositions;
-
 
         let dataCenter   = this.dataMin + dataRange/2,
             minRange     = this.options.minRange,
@@ -145,12 +139,8 @@ axis        : Each parameter get own y-axis in own color, or all axels in black 
         });
 
         return this.tickPositions.slice(minTickIndex, maxTickIndex+1);
-    }
 */
-
-
-
-
+    }
 
     /****************************************************************************
     convert-function.
@@ -207,6 +197,9 @@ axis        : Each parameter get own y-axis in own color, or all axels in black 
             noSubTitle: BOOLEAN (false). When true no sub-title is shown
             noLegend  : BOOLEAN (false). When true no legends are shown
             noZoom    : BOOLEAN (false). When true the x-zoom is disabled
+
+
+
 
         The data:
             data        : DATAOPTIONS
@@ -472,13 +465,17 @@ axis        : Each parameter get own y-axis in own color, or all axels in black 
         location    : []Location Or Location
         series      : SERIESOPTIONS or []SERIESOPTIONS or [](SERIESOPTIONS or []SERIESOPTIONS)
         chartOptions: JSON
-
             shareYAxis  : BOOLEAN, false. If true series with same parameter using the same y-axis. If false every series gets it own y-axis
 
         finally     : function(timeSeries) (optional) Called when all data are loaded.
 
         zeroLine    : BOOLEAN (true). If true a thin horizontal line is drawn on y-axis value 0 in the same color as the series
         verticalLines: VERTICALLINE or []VERTICALLINE
+
+        parameterMinRange       : See description above
+        parameterSemiFixedRange :           do
+        parameterFixedRange     :           do
+
 
     }
 
@@ -503,8 +500,10 @@ axis        : Each parameter get own y-axis in own color, or all axels in black 
             zeroLine            : true,
             verticalLines       : [],
             shareYAxis          : true,
-            parameterMinRange   : {},
-            parameterFixedRange : {}
+            parameterFixedRange    : {},
+            parameterSemiFixedRange: {},
+            parameterMinRange      : {}
+
         },
         options);
 
@@ -526,18 +525,23 @@ axis        : Each parameter get own y-axis in own color, or all axels in black 
         }, this);
 
 
-        this.parameterMinRange   = {};
-        this.parameterFixedRange = {};
+        this.parameterFixedRange     = {};
+        this.parameterSemiFixedRange = {};
+        this.parameterMinRange       = {};
+
         this.parameter.forEach( param => {
-            //Getting the minRange and fixedRange (if any) from the charts options, the parameter or the parameter speed-parameter (if any)
+            //Getting the fixedRange, semiFixedRange, and minRange (if any) from the charts options, the parameter or the parameter speed-parameter (if any)
             const pId        = param.id,
                   speedParam = param.speed_direction && param.speed_direction.length ? param.speed_direction[0] : param,
                   speedId    = speedParam.id;
 
-            this.parameterMinRange[pId]       = this.options.parameterMinRange[pId]   || param.minRange   || speedParam.minRange   || null;
-            this.parameterFixedRange[pId]     = this.options.parameterFixedRange[pId] || param.FixedRange || speedParam.FixedRange || null;
-            this.parameterMinRange[speedId]   = this.parameterMinRange[pId];
-            this.parameterFixedRange[speedId] = this.parameterFixedRange[pId];
+            this.parameterFixedRange[pId]     = this.options.parameterFixedRange[pId]     || param.fixedRange     || speedParam.fixedRange     || null;
+            this.parameterSemiFixedRange[pId] = this.options.parameterSemiFixedRange[pId] || param.semiFixedRange || speedParam.semiFixedRange || null;
+            this.parameterMinRange[pId]       = this.options.parameterMinRange[pId]       || param.minRange       || speedParam.minRange       || null;
+
+            this.parameterFixedRange[speedId]     = this.parameterFixedRange[pId];
+            this.parameterSemiFixedRange[speedId] = this.parameterSemiFixedRange[pId];
+            this.parameterMinRange[speedId]       = this.parameterMinRange[pId];
         }, this);
 
         this.multiParameter = this.parameter.length > 1;
@@ -762,7 +766,7 @@ axis        : Each parameter get own y-axis in own color, or all axels in black 
                     align        : 'center',
                     borderWidth  : 0,
                     enabled      : !this.options.noLegend,
-                    margin       : 0,
+                    margin       : 12,
                     verticalAlign: 'top',
                 });
 
@@ -874,16 +878,16 @@ axis        : Each parameter get own y-axis in own color, or all axels in black 
 
                 this.parameter.forEach( param => param.yAxisId = '' );
 
-                //If shareYAxis => check if there are multi series with same parameter
+                //If shareYAxis => check if there are multi series with same parameter. Acount for the possible that the Parameter in this.parameter[] can be a clone of Parameter => this.parameter[x].id == this.parameter[y].id but this.parameter[x] not equal this.parameter
+                let isUniqueParameter = {};
                 if (shareYAxis){
                     shareYAxis = false;
                     this.parameter.forEach( param => {
-                        if (param.isUniqueParameter)
+                        if (isUniqueParameter[param.id])
                             shareYAxis = true;
                         else
-                            param.isUniqueParameter = true;
+                            isUniqueParameter[param.id] = true;
                     });
-                    this.parameter.forEach( param => delete param.isUniqueParameter );
                 }
 
                 //Create all the yAxis needed
@@ -915,7 +919,7 @@ axis        : Each parameter get own y-axis in own color, or all axels in black 
                             text: parameter.decodeGetName(true, true, this.singleSingle && z ? z : false),
                             style: style
                         },
-                        showEmpty: false,   //=> Remove both axis and title when serie is unselected
+                        showEmpty: false,   //=> Remove both axis and title when series is unselected
 
                         labels: {
                             formatter: parameter.hcOptions_axis_labels_formatter(),
@@ -950,7 +954,6 @@ axis        : Each parameter get own y-axis in own color, or all axels in black 
             }
 
             //Update yAxis with other options
-            /* @todo
             let addEvent = ( originalEvent, newEvent ) => {
                     if (originalEvent)
                         return function( _originalEvent ){
@@ -962,7 +965,7 @@ axis        : Each parameter get own y-axis in own color, or all axels in black 
                     else
                         return newEvent;
                 };
-            */
+
             let setOption = ( originalValue, newValue ) => {
                     return originalValue === undefined ? newValue : originalValue;
                 };
@@ -977,26 +980,50 @@ axis        : Each parameter get own y-axis in own color, or all axels in black 
 
             //Update all yAxis with default options
             chartOptions.yAxis.forEach( options => {
-                //@todo: Set the options needed to get a better minRange.
-                //@todo: See function axis_tickPositioner at the top
 
-                options.minRange   = options.minRange   || this.parameterMinRange[options.parameterId];
-                options.fixedRange = options.fixedRange || this.parameterFixedRange[options.parameterId];
+                //Move the label just above the line
+                options.labels = options.labels || {};
+                options.labels.y = -2;
+
+                //Set label right-align. Only works as expected for left-sided axis (why??)
+                if (!options.opposite)
+                    options.labels.align = 'right';
+
+                //Set options for the y-axis regarding ((semi-)-fixed-)rang
+//HER               this.parameterFixedRange[speedId]     = this.parameterFixedRange[pId];
+//HER               this.parameterSemiFixedRange[speedId] = this.parameterSemiFixedRange[pId];
+//HER               this.parameterMinRange[speedId]       = this.parameterMinRange[pId];
+
+
+
+                options.fixedRange      = options.fixedRange     || this.parameterFixedRange[options.parameterId];
+                options.semiFixedRange  = options.semiFixedRange || this.parameterSemiFixedRange[options.parameterId];
+                options.minRange        = options.minRange       || this.parameterMinRange[options.parameterId];
 
                 if (options.fixedRange){
-                    options.min         = options.fixedRange[0];
-                    options.max         = options.fixedRange[1];
-                    options.startOnTick = setOption( options.startOnTick, false );
-                    options.endOnTick   = setOption( options.endOnTick,   false );
-                    options.minRange    = null;
+                    options.min             = options.fixedRange[0];
+                    options.max             = options.fixedRange[1];
+                    options.startOnTick     = setOption( options.startOnTick, false );
+                    options.endOnTick       = setOption( options.endOnTick,   false );
+                    options.tickPositioner  = addEvent( options.tickPositioner, axis_tickPositioner_fixedRange);
+                    options.semiFixedRange  = null;
+                    options.minRange        = null;
+                }
+
+                if (options.semiFixedRange){
+                    if (Array.isArray(options.semiFixedRange))
+                        options.semiFixedRange = {
+                            min  : options.semiFixedRange[0],
+                            range: options.semiFixedRange[1]
+                    }
+                    options.min      = options.semiFixedRange.min;
+                    options.minRange = options.semiFixedRange.range;
                 }
 
                 if (options.minRange){
                     options.startOnTick             = setOption( options.startOnTick, false  );
                     options.endOnTick               = setOption( options.endOnTick,   false  );
-                    //options.tickPositioner          = addEvent( options.tickPositioner, axis_tickPositioner);
-                    //options.events                  = options.events || {};
-                    //options.events.afterSetExtremes = addEvent( options.events.afterSetExtremes, axis_afterSetExtremes);
+                    options.tickPositioner          = addEvent( options.tickPositioner, axis_tickPositioner);
                 }
             }, this);
 

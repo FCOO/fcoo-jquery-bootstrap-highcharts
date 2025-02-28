@@ -461,11 +461,11 @@ Version 5 changes
                     });
                 }
 
-                //Update serie-options with default
+                //Update series-options with default
                 if (opt.series){
-                    opt.series.forEach( (serie, index) => {
+                    opt.series.forEach( (series, index) => {
                         //@todo Set color of series
-                        opt.series[index].dataGrouping = $.extend(true, {}, defaultDataGrouping, serie.dataGrouping || {});
+                        opt.series[index].dataGrouping = $.extend(true, {}, defaultDataGrouping, series.dataGrouping || {});
                     });
                 }
                 return opt;

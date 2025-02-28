@@ -167,7 +167,9 @@
 
                 var axis = [];
                 if (parameter[0] == 'sea_surface_height_above_mean_sea_level')
-                    axis.push({minRange: 1});
+                    //axis.push({fixedRange: [0, 2000]});
+                    axis.push({semiFixedRange: [0, 70]});
+                    //axis.push({minRange: 500});
 
                 let zList = [];
                 parameter.forEach( pName => {
