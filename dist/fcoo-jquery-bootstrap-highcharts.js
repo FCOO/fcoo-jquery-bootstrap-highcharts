@@ -670,21 +670,34 @@ fixedRange, minRange, semiFixedRange can also be set in the Parameter-object (fc
     Adjust the tick with labels for axis with fixed range
     Adds min, max and zero (if the are missing)
     *********************************************************/
-    function axis_tickPositioner_fixedRange(min, max){
-        let result = [0,min,max];
+    function axis_tickPositioner_fixedRange(/*min, max*/){
+        let result = [0, this.min, this.max];
         this.tickPositions.forEach( tickValue => {
-            if (tickValue && (tickValue > min) && (tickValue < max))
+            if (tickValue && (tickValue >= this.min) && (tickValue <= this.max))
                 result.push(tickValue);
         });
         result.sort();
         return result;
     }
 
+/* NOT USED
+    function axis_tickPositioner_semiFixedRange(){
+        let result;
+        if (this.paddedTicks)
+            result = [Math.min(...this.paddedTicks), 0, Math.max(...this.paddedTicks)];
+        else
+            result = [0];
 
-    function axis_tickPositioner(/*min, max*/){
+        this.tickPositions.forEach( tickValue => {
+            result.push(tickValue);
+        });
+        result.sort();
+        return result;
+    }
+*/
+    function axis_tickPositioner_minRange(/*min, max*/){
         return this.tickPositions;
-
-/*NOT USED
+/* @todo
         let dataRange = this.dataMax - this.dataMin;
 
         if (dataRange > this.options.minRange)
@@ -707,7 +720,6 @@ fixedRange, minRange, semiFixedRange can also be set in the Parameter-object (fc
                     minTickIndex = index;
             }
         });
-
         return this.tickPositions.slice(minTickIndex, maxTickIndex+1);
 */
     }
@@ -1560,12 +1572,6 @@ fixedRange, minRange, semiFixedRange can also be set in the Parameter-object (fc
                     options.labels.align = 'right';
 
                 //Set options for the y-axis regarding ((semi-)-fixed-)rang
-//HER               this.parameterFixedRange[speedId]     = this.parameterFixedRange[pId];
-//HER               this.parameterSemiFixedRange[speedId] = this.parameterSemiFixedRange[pId];
-//HER               this.parameterMinRange[speedId]       = this.parameterMinRange[pId];
-
-
-
                 options.fixedRange      = options.fixedRange     || this.parameterFixedRange[options.parameterId];
                 options.semiFixedRange  = options.semiFixedRange || this.parameterSemiFixedRange[options.parameterId];
                 options.minRange        = options.minRange       || this.parameterMinRange[options.parameterId];
@@ -1579,22 +1585,25 @@ fixedRange, minRange, semiFixedRange can also be set in the Parameter-object (fc
                     options.semiFixedRange  = null;
                     options.minRange        = null;
                 }
-
-                if (options.semiFixedRange){
-                    if (Array.isArray(options.semiFixedRange))
-                        options.semiFixedRange = {
-                            min  : options.semiFixedRange[0],
-                            range: options.semiFixedRange[1]
+                else
+                    if (options.semiFixedRange){
+                        if (Array.isArray(options.semiFixedRange))
+                            options.semiFixedRange = {
+                                min  : options.semiFixedRange[0],
+                                range: options.semiFixedRange[1]
+                        };
+                        options.min            = options.semiFixedRange.min;
+                        options.minRange       = options.semiFixedRange.range;
+                        options.startOnTick    = setOption( options.startOnTick, true );
+                        options.endOnTick      = setOption( options.endOnTick,   true );
+                        //options.tickPositioner = addEvent( options.tickPositioner, axis_tickPositioner_semiFixedRange);
                     }
-                    options.min      = options.semiFixedRange.min;
-                    options.minRange = options.semiFixedRange.range;
-                }
-
-                if (options.minRange){
-                    options.startOnTick             = setOption( options.startOnTick, false  );
-                    options.endOnTick               = setOption( options.endOnTick,   false  );
-                    options.tickPositioner          = addEvent( options.tickPositioner, axis_tickPositioner);
-                }
+                    else
+                        if (options.minRange){
+                            options.startOnTick    = setOption( options.startOnTick, true  );
+                            options.endOnTick      = setOption( options.endOnTick,   true  );
+                            options.tickPositioner = addEvent( options.tickPositioner, axis_tickPositioner_minRange);
+                        }
             }, this);
 
 
