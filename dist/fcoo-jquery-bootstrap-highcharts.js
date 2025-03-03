@@ -33,6 +33,7 @@ Version 5 changes
 
 	//Create fcoo-namespace
     var ns = window.fcoo = window.fcoo || {},
+        nsColor = ns.color = ns.color || {},
         nsHC = ns.hc = ns.highcharts = ns.highcharts || {};
 
 
@@ -111,6 +112,17 @@ Version 5 changes
         rangeWeekFrom   : function(timestamp){ return       weekFormat(timestamp, true, false); },
         rangeWeekTo     : function(timestamp){ return '-' + weekFormat(timestamp, false, true); },
     });
+
+
+
+    /*********************************************************
+    Setting default colors using fcoo-color
+    Set another order of colors taken from "best practice" on the web!!
+    *********************************************************/
+    nsHC.colorList = ["blue", "green", "orange", "red", "purple", "cyan", "yellow", "pink" , "gray"];;
+    let colors = [];
+    nsHC.colorList.forEach( color => colors.push(nsColor.getColor(color)) );
+    Highcharts.setOptions({colors: colors});
 
     /*********************************************************
     Set default FCOO options for chart and stockChart
@@ -861,8 +873,8 @@ fixedRange, minRange, semiFixedRange can also be set in the Parameter-object (fc
             //color     : NUMBER = index in default color-list (Blue, Red, Green,...)
             //deltaColor: NUMBER is relative to window.fcoo.color.defaultGradient (+ = darker - = lighter)
 
-            o.color = nsColor.getDeltaColor(o.color, o.deltaColor, true);
-
+            let colorName = nsHC.colorList[ o.color % nsHC.colorList.length ];
+            o.color = nsColor.getDeltaColor(colorName, o.deltaColor);
 
             //maxGap = Maximum gap between to points in minutes. Is converted to options gapSize
             if (o.maxGap){

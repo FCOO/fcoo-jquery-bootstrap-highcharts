@@ -291,8 +291,8 @@ fixedRange, minRange, semiFixedRange can also be set in the Parameter-object (fc
             //color     : NUMBER = index in default color-list (Blue, Red, Green,...)
             //deltaColor: NUMBER is relative to window.fcoo.color.defaultGradient (+ = darker - = lighter)
 
-            o.color = nsColor.getDeltaColor(o.color, o.deltaColor, true);
-
+            let colorName = nsHC.colorList[ o.color % nsHC.colorList.length ];
+            o.color = nsColor.getDeltaColor(colorName, o.deltaColor);
 
             //maxGap = Maximum gap between to points in minutes. Is converted to options gapSize
             if (o.maxGap){

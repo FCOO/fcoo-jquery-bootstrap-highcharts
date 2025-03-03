@@ -33,6 +33,7 @@ Version 5 changes
 
 	//Create fcoo-namespace
     var ns = window.fcoo = window.fcoo || {},
+        nsColor = ns.color = ns.color || {},
         nsHC = ns.hc = ns.highcharts = ns.highcharts || {};
 
 
@@ -111,6 +112,17 @@ Version 5 changes
         rangeWeekFrom   : function(timestamp){ return       weekFormat(timestamp, true, false); },
         rangeWeekTo     : function(timestamp){ return '-' + weekFormat(timestamp, false, true); },
     });
+
+
+
+    /*********************************************************
+    Setting default colors using fcoo-color
+    Set another order of colors taken from "best practice" on the web!!
+    *********************************************************/
+    nsHC.colorList = ["blue", "green", "orange", "red", "purple", "cyan", "yellow", "pink" , "gray"];;
+    let colors = [];
+    nsHC.colorList.forEach( color => colors.push(nsColor.getColor(color)) );
+    Highcharts.setOptions({colors: colors});
 
     /*********************************************************
     Set default FCOO options for chart and stockChart

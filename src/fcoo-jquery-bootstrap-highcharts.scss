@@ -25,65 +25,6 @@
 @import "../bower_components/fcoo-colors/src/fcoo-colors-variables";
 @import "../bower_components/fcoo-colors/src/fcoo-colors-mixin";
 
-
-
-/*****************************
-Colors for series - taken from fcoo-colors
-*****************************/
-:root {
-/*
-//Variables for the the nine colors
-$fc-blue    : 0;
-$fc-purple  : 1;
-$fc-red     : 2;
-$fc-orange  : 3;
-$fc-cyan    : 4;
-$fc-yellow  : 5;
-$fc-pink    : 6;
-$fc-green   : 7;
-$fc-gray    : 8;
-
-
-//$fc-default-gradient = standard gradient to be used
-$fc-default-gradient: 4 !default;
-
-@function fc-get-color($color, $gradient: $fc-default-gradient) {
-
-*/
-
-
-
-
-    --highcharts-color-0: #{fc-get-color( $fc-yellow, 5 )};
-//HER       --highcharts-color-0: #2caffe;
-//HER       --highcharts-color-1: #544fc5;
-//HER       --highcharts-color-2: #00e272;
-//HER       --highcharts-color-3: #fe6a35;
-//HER       --highcharts-color-4: #6b8abc;
-//HER       --highcharts-color-5: #d568fb;
-//HER       --highcharts-color-6: #2ee0ca;
-//HER       --highcharts-color-7: #fa4b42;
-//HER       --highcharts-color-8: #feb56a;
-//HER       --highcharts-color-9: #91e8e1;
-
-/*
-    --highcharts-color-0: #2caffe;
-    --highcharts-color-0: #2caffe;
-    --highcharts-color-1: #544fc5;
-    --highcharts-color-2: #00e272;
-    --highcharts-color-3: #fe6a35;
-    --highcharts-color-4: #6b8abc;
-    --highcharts-color-5: #d568fb;
-    --highcharts-color-6: #2ee0ca;
-    --highcharts-color-7: #fa4b42;
-    --highcharts-color-8: #feb56a;
-    --highcharts-color-9: #91e8e1;
-*/
-}
-
-
-
-
 /*****************************
 chart-inner-container
 *****************************/
@@ -123,4 +64,9 @@ Tooltips
         text-align: center;
     }
 }
+
+
+
+
+
 
