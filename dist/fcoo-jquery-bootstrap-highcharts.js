@@ -119,10 +119,14 @@ Version 5 changes
     Setting default colors using fcoo-color
     Set another order of colors taken from "best practice" on the web!!
     *********************************************************/
-    nsHC.colorList = ["blue", "green", "orange", "red", "purple", "cyan", "yellow", "pink" , "gray"];;
-    let colors = [];
-    nsHC.colorList.forEach( color => colors.push(nsColor.getColor(color)) );
-    Highcharts.setOptions({colors: colors});
+    nsHC.setColors = function( colorList ){
+        let colors = [];
+        nsHC.colorList = colorList;
+        nsHC.colorList.forEach( color => colors.push(nsColor.getColor(color)) );
+        Highcharts.setOptions({colors: colors});
+    }
+
+    nsHC.setColors( ["blue", "green", "orange", "red", "purple", "cyan", "yellow", "pink" , "gray"] );
 
     /*********************************************************
     Set default FCOO options for chart and stockChart
