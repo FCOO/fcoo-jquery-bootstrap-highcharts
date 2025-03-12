@@ -16391,6 +16391,9 @@ Using Bootstrap Collapse to create accordion
   color: var(--bs-accordion-active-btn-hover-color, var(--bs-accordion-active-btn-color));
   background-color: var(--bs-accordion-active-btn-hover-bg, var(--bs-accordion-active-btn-bg));
 }
+.accordion .accordion-button.collapsed:focus {
+  box-shadow: none;
+}
 .accordion .accordion-button span,
 .accordion .accordion-footer span {
   overflow: hidden;

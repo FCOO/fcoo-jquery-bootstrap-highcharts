@@ -74,6 +74,14 @@ Tooltips
   text-align: center;
 }
 
+.chart-tooltip-color-dot {
+  min-width: 1em;
+  font-size: 0.8em;
+  padding: 0;
+  padding-bottom: 0.4em;
+  padding-right: 0.2em;
+}
+
 .chart-tooltip-name {
   max-width: 160px;
   white-space: nowrap;

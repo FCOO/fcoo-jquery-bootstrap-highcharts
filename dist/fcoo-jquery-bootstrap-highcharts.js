@@ -1288,8 +1288,10 @@ fixedRange, minRange, semiFixedRange can also be set in the Parameter-object (fc
             var serieName = i18next.s( $._bsAdjustText( timeSeries.multiLocation ? this.series.name : this.series.options.nameInTooltip ) ),
                 fix = timeSeries._tooltip_get_fix(this);
 
+            //Char &#9606; = LOWER THREE QUARTERS BLOCK Alt = &#9609; = LEFT SEVEN EIGHTHS BLOCK,
             return  `<tr>
-                        <td class="chart-tooltip-name" style="color:${this.color}">
+                        <td class="chart-tooltip-color-dot" style="color:${this.color};">&#9606;</td>
+                        <td class="chart-tooltip-name">
                             ${fix.tooltipPrefix}${fix.tooltipLabelPrefix}${serieName}${fix.tooltipLabelPostfix}&nbsp;
                         </td>
                         <td class="chart-tooltip-value">` +
@@ -1418,7 +1420,7 @@ fixedRange, minRange, semiFixedRange can also be set in the Parameter-object (fc
                 if (this.singleSingle && !this.options.alwaysShowParameter)
                     //Single location and paramater
                     this.set('tooltip.pointFormatter', function(){ return _this._tooltip_pointFormatter_single.call(this, _this); });
-                else
+               else
                     //Display multi paramater or location in a table to have correct align
                     this.set('tooltip.pointFormatter', function(){ return _this._tooltip_pointFormatter_multi.call(this, _this); });
 
