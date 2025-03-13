@@ -44,12 +44,16 @@ Extend Parameter-object from fcoo-parameter-unit to interact with Highchart
     Extend Parameter with methods to get Highchart options
     ********************************************/
     $.extend(nsParameter.Parameter.prototype, {
-        decodeGetName: function(inclUnit, useSpeedParameter, z){
+        _decodeGetName: function(inclUnit, useSpeedParameter, z, useShortName){
             var param = this;
             if (useSpeedParameter && (this.speed_direction.length > 0))
                 param = this.speed_direction[0];
-            return decode( param.getName(inclUnit, z) );
+            return decode( param.getName(inclUnit, z, null/*useUnit*/, useShortName) );
         },
+
+        decodeGetName       : function(inclUnit, useSpeedParameter, z){ return this._decodeGetName(inclUnit, useSpeedParameter, z      ); },
+        decodeGetShortName  : function(inclUnit, useSpeedParameter, z){ return this._decodeGetName(inclUnit, useSpeedParameter, z, true); },
+
 
         //hcOptions_XX: Return options for given part of options for charts
         hcOptions_axis_title: function(z){

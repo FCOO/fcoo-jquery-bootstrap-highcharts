@@ -124,7 +124,7 @@ Version 5 changes
         nsHC.colorList = colorList;
         nsHC.colorList.forEach( color => colors.push(nsColor.getColor(color)) );
         Highcharts.setOptions({colors: colors});
-    }
+    };
 
     nsHC.setColors( ["blue", "green", "orange", "red", "purple", "cyan", "yellow", "pink" , "gray"] );
 

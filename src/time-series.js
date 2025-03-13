@@ -1046,7 +1046,7 @@ fixedRange, minRange, semiFixedRange can also be set in the Parameter-object (fc
                     let z = this.zList[index];
                     chartOptions.series.push({
                         name         : parameter.decodeGetName(true, false, z),
-                        nameInTooltip: parameter.decodeGetName(false, false/*true*/, z), //<- Changed 2021-06-10 to show vector-name instead of speed-name
+                        nameInTooltip: parameter.decodeGetShortName(false, false/*true*/, z), //<- Changed 2021-06-10 to show vector-name instead of speed-name
                         yAxis        : this.series[index].yAxisId,
                         tooltip      : parameter.hcOptions_series_tooltip('', z)
                     });

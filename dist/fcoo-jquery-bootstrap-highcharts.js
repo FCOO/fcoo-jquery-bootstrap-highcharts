@@ -124,7 +124,7 @@ Version 5 changes
         nsHC.colorList = colorList;
         nsHC.colorList.forEach( color => colors.push(nsColor.getColor(color)) );
         Highcharts.setOptions({colors: colors});
-    }
+    };
 
     nsHC.setColors( ["blue", "green", "orange", "red", "purple", "cyan", "yellow", "pink" , "gray"] );
 
@@ -537,12 +537,16 @@ Extend Parameter-object from fcoo-parameter-unit to interact with Highchart
     Extend Parameter with methods to get Highchart options
     ********************************************/
     $.extend(nsParameter.Parameter.prototype, {
-        decodeGetName: function(inclUnit, useSpeedParameter, z){
+        _decodeGetName: function(inclUnit, useSpeedParameter, z, useShortName){
             var param = this;
             if (useSpeedParameter && (this.speed_direction.length > 0))
                 param = this.speed_direction[0];
-            return decode( param.getName(inclUnit, z) );
+            return decode( param.getName(inclUnit, z, null/*useUnit*/, useShortName) );
         },
+
+        decodeGetName       : function(inclUnit, useSpeedParameter, z){ return this._decodeGetName(inclUnit, useSpeedParameter, z      ); },
+        decodeGetShortName  : function(inclUnit, useSpeedParameter, z){ return this._decodeGetName(inclUnit, useSpeedParameter, z, true); },
+
 
         //hcOptions_XX: Return options for given part of options for charts
         hcOptions_axis_title: function(z){
@@ -1632,7 +1636,7 @@ fixedRange, minRange, semiFixedRange can also be set in the Parameter-object (fc
                     let z = this.zList[index];
                     chartOptions.series.push({
                         name         : parameter.decodeGetName(true, false, z),
-                        nameInTooltip: parameter.decodeGetName(false, false/*true*/, z), //<- Changed 2021-06-10 to show vector-name instead of speed-name
+                        nameInTooltip: parameter.decodeGetShortName(false, false/*true*/, z), //<- Changed 2021-06-10 to show vector-name instead of speed-name
                         yAxis        : this.series[index].yAxisId,
                         tooltip      : parameter.hcOptions_series_tooltip('', z)
                     });
