@@ -1137,9 +1137,9 @@ fixedRange, minRange, semiFixedRange can also be set in the Parameter-object (fc
                   speedParam = param.speed_direction && param.speed_direction.length ? param.speed_direction[0] : param,
                   speedId    = speedParam.id;
 
-            this.parameterFixedRange[pId]     = this.options.parameterFixedRange[pId]     || param.fixedRange     || speedParam.fixedRange     || null;
-            this.parameterSemiFixedRange[pId] = this.options.parameterSemiFixedRange[pId] || param.semiFixedRange || speedParam.semiFixedRange || null;
-            this.parameterMinRange[pId]       = this.options.parameterMinRange[pId]       || param.minRange       || speedParam.minRange       || null;
+            this.parameterFixedRange[pId]     = this.options.parameterFixedRange[pId]     || param.options.fixedRange     || speedParam.options.fixedRange     || null;
+            this.parameterSemiFixedRange[pId] = this.options.parameterSemiFixedRange[pId] || param.options.semiFixedRange || speedParam.options.semiFixedRange || null;
+            this.parameterMinRange[pId]       = this.options.parameterMinRange[pId]       || param.options.minRange       || speedParam.options.minRange       || null;
 
             this.parameterFixedRange[speedId]     = this.parameterFixedRange[pId];
             this.parameterSemiFixedRange[speedId] = this.parameterSemiFixedRange[pId];
